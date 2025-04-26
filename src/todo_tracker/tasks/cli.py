@@ -21,10 +21,7 @@ def list():
         return
     
     for task in tasks:
-        print(f"[{task.id}] {task.title} - {task.status}")
-        description = task.description
-        if description and description == description:
-            print(f"    {task.description}")
+        task.render()
 
 @cli.command()
 def update(task_id: int, title: Optional[str] = None, description: Optional[str] = None, status: Optional[str] = None):

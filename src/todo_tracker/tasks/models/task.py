@@ -25,3 +25,9 @@ class Task(BaseModel):
 
     class Config:
         from_attributes = True
+
+    def render(self):
+        print(f"[{self.id}] {self.title} - {self.status}")
+        description = self.description
+        if description and description == description:
+            print(f"    {self.description}")
