@@ -1,7 +1,7 @@
 # Todo Tracker - Technical Requirements Specification
 
 ## Overview
-Todo Tracker is a Terminal User Interface (TUI) application built with Python and the Rich library, focusing on task management with time tracking capabilities. The application provides an intuitive interface with keyboard shortcuts and mouse interactions, allowing users to manage tasks and track time efficiently.
+Todo Tracker is a Terminal User Interface (TUI) application built with Python and the Textual library, focusing on task management with time tracking capabilities. The application provides an intuitive interface with keyboard shortcuts and mouse interactions, allowing users to manage tasks and track time efficiently.
 
 ## Core Features
 1. Task Management
@@ -17,7 +17,7 @@ Todo Tracker is a Terminal User Interface (TUI) application built with Python an
    - Automatic time calculation for total time spent
 
 3. User Interface
-   - TUI built with Rich library
+   - TUI built with Textual library
    - Mouse interaction support
    - Keyboard shortcuts for all operations
    - Real-time updates and notifications
@@ -123,7 +123,7 @@ Todo Tracker is a Terminal User Interface (TUI) application built with Python an
 
 ## Development Tools
 - Python 3.8+
-- Rich library for TUI
+- Textual library for TUI
 - pytest for testing
 - black for code formatting
 - pylint for code quality

@@ -1,3 +1,6 @@
 [environment]
 use `source .venv/bin/activate` to activate the virtual environment at the start of each session
 alias pip="uv pip"
+
+[specs]
+Technical specifications are present in docs/specs/technical-requirements.md
