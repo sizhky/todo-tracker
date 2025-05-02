@@ -13,13 +13,16 @@ def add(title: str, description: Optional[str] = None):
     print(f"Created task {task.id}: {task.title}")
 
 @cli.command()
-def list():
+def list(from_mcp: bool = False):
     """List all tasks"""
     tasks = task_manager.list_tasks()
     if not tasks:
         print("No tasks found")
         return
-    
+    if from_mcp:
+        json = {'tasks': [task.to_dict() for task in tasks]}
+        return json
+        
     for task in tasks:
         task.render()
 

@@ -9,6 +9,16 @@ class TaskStatus(str, enum.Enum):
     IN_PROGRESS = 'in-progress'
     COMPLETED = 'completed'
 
+    def emoji_map(self):
+        return {
+            TaskStatus.PENDING: '⏳',
+            TaskStatus.IN_PROGRESS: '🏗️',
+            TaskStatus.COMPLETED: '✅'
+        }
+
+    def __str__(self):
+        return f'{self.emoji_map().get(self, "❓")}'
+
 class Task(BaseModel):
     id: int = Field(default=None)
     title: str
@@ -27,7 +37,17 @@ class Task(BaseModel):
         from_attributes = True
 
     def render(self):
-        print(f"[{self.id}] {self.title} - {self.status}")
+        print(f"[{self.id}] - {self.status} - {self.title}")
         description = self.description
         if description and description == description:
             print(f"    {self.description}")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'status': self.status,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
