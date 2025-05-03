@@ -17,7 +17,7 @@ def add(title: str, description: Optional[str] = None):
         return {"task": created_task}
     return {"error": "Task could not be created"}
 
-@router.post("/list")
+@router.get("/list")
 def list():
     output = task_cli.list(as_json=True)
     return output
