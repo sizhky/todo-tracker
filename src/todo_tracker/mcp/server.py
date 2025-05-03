@@ -14,7 +14,7 @@ def add_task(title: str, description: Optional[str] = None) -> str:
 @mcp.tool()
 def list_tasks() -> str:
     """List all tasks using the imported CLI function."""
-    return task_cli.list(from_mcp=True)
+    return task_cli.list(as_json=True)
 
 @mcp.tool()
 def update_task(task_id: int, title: Optional[str] = None, description: Optional[str] = None, status: Optional[str] = None) -> str:
