@@ -12,11 +12,5 @@ for command in commands:
     mcp.tool()(func)
 
 
-# @mcp.tool()
-# def list_tasks() -> str:
-#     """List all tasks using the imported CLI function."""
-#     return list_tasks_cli(as_json=True)
-
-
 if __name__ == "__main__":
     mcp.run()

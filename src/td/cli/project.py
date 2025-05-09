@@ -24,7 +24,7 @@ def create_project(
 
     if area_id is None and area:
         # Check if the area exists
-        area_id = _list_areas(return_ids=True).area2id.get(area)
+        area_id = _list_areas().area2id.get(area)
         if not area_id:
             area_id = create_area(name=area, description="Auto-created area")
     elif area_id is None and area is None:

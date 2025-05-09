@@ -28,7 +28,7 @@ def create_area(
         return created_area.id
 
 
-def _list_areas(skip: int = 0, limit: int = 100, return_ids: bool = False):
+def _list_areas(skip: int = 0, limit: int = 100):
     """
     List all areas in the database with optional pagination.
     """
@@ -36,15 +36,7 @@ def _list_areas(skip: int = 0, limit: int = 100, return_ids: bool = False):
         areas = get_all_areas_from_db(session, skip=skip, limit=limit)
         id2area = {area.id: area.name for area in areas}
         area2id = {area.name: area.id for area in areas}
-        if return_ids:
-            return AD(area2id, id2area)
-        for area in areas:
-            print(
-                f"Area ID: {area.id}, Name: {area.name}, Description: `{area.description}`"
-            )
-
-        if not areas:
-            print("No areas found.")
+        return AD(area2id, id2area, areas)
 
 
 @cli.command(name="al")
@@ -52,7 +44,13 @@ def list_areas(skip: int = 0, limit: int = 100, return_ids: bool = False):
     """
     List all areas in the database with optional pagination.
     """
-    _list_areas(skip=skip, limit=limit, return_ids=return_ids)
+    x = _list_areas(skip=skip, limit=limit, return_ids=return_ids)
+    for area in x.areas:
+        print(
+            f"Area ID: {area.id}, Name: {area.name}, Description: `{area.description}`"
+        )
+    if not x.areas:
+        print("No areas found.")
 
 
 @cli.command(name="ad")
@@ -68,7 +66,7 @@ def delete_area(
 
     with session_scope() as session:
         try:
-            area_id = _list_areas(return_ids=True).area2id.get(area)
+            area_id = _list_areas().area2id.get(area)
             if not area_id:
                 raise ValueError(f"Area with name {area} not found.")
             delete_area_from_db(session, area_id)
