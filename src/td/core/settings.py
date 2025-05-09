@@ -13,4 +13,4 @@ DATABASE_URL = f"sqlite:///{DB_DIR / 'td.db'}"
 
 # Set to True to see all SQL statements executed by SQLAlchemy (SQLModel's backend)
 # Useful for debugging, but can be verbose.
-ECHO_SQL = True  # Or False for less verbose output, especially in production
+ECHO_SQL = False  # Or False for less verbose output, especially in production

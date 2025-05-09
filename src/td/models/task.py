@@ -1,7 +1,9 @@
-from typing import Optional, List
+from typing import Optional
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime, timezone
 import enum
+
+from td.models.project import Project  # Assuming Project is in project.py
 
 
 class TaskStatus(str, enum.Enum):
@@ -18,33 +20,6 @@ class TaskStatus(str, enum.Enum):
 
     def __str__(self):
         return f"{self.emoji_map().get(self, '❓')}"
-
-
-# Forward declaration for type hinting relationships
-class Project(SQLModel):  # Removed table=True
-    pass
-
-
-class Area(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    name: str = Field(index=True, unique=True)  # Assuming area names should be unique
-    description: Optional[str] = Field(default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    projects: List["Project"] = Relationship(back_populates="area")
-
-
-class Project(SQLModel, table=True):  # Full definition of Project # noqa: F811
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    name: str = Field(index=True)
-    description: Optional[str] = Field(default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-    area_id: Optional[int] = Field(default=None, foreign_key="area.id", index=True)
-    area: Optional["Area"] = Relationship(back_populates="projects")
-
-    tasks: List["Task"] = Relationship(back_populates="project")
 
 
 class TaskBase(SQLModel):  # Fields common to creation and reading, not a table
@@ -84,48 +59,6 @@ class TaskUpdate(SQLModel):  # Only fields that are updatable
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
     project_id: Optional[int] = None
-
-
-class ProjectCreate(SQLModel):
-    name: str
-    description: Optional[str] = None
-    area_id: Optional[int] = None
-
-
-class ProjectRead(SQLModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    area_id: Optional[int] = None
-    created_at: datetime
-    updated_at: datetime
-    # area: Optional[AreaRead] = None # If you want to nest area details
-    # tasks: List[TaskRead] = [] # If you want to nest task details
-
-
-class ProjectUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    area_id: Optional[int] = None
-
-
-class AreaCreate(SQLModel):
-    name: str
-    description: Optional[str] = None
-
-
-class AreaRead(SQLModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    # projects: List[ProjectRead] = [] # If you want to nest project details
-
-
-class AreaUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
 
 
 # To handle the forward references for relationships, update them after all models are defined.

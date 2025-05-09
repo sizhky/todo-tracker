@@ -3,14 +3,14 @@ from sqlmodel import SQLModel, Session, create_engine
 from typing import Generator
 
 # Adjust the import paths based on your project structure
-from td.models.task import (
+from td.models import (
     Task,
     TaskCreate,
     TaskStatus,
     Project,
     Area,
 )  # Import all models used by metadata
-from td.crud.crud_task import create_task_db, get_all_tasks_db
+from td.crud.task import create_task_in_db, get_all_tasks_from_db
 # from td.core.settings import DATABASE_URL # We won't use the main DATABASE_URL for tests
 
 
@@ -40,19 +40,19 @@ def test_create_task_db(session: Session):
     """
     Test creating a task in the database.
     """
-    task_in = TaskCreate(
+    task = TaskCreate(
         title="Test Task 1", description="Test Description 1", status=TaskStatus.PENDING
     )
 
-    created_task = create_task_db(db=session, task_in=task_in)
+    created_task = create_task_in_db(db=session, task=task)
 
     assert created_task is not None
     assert (
         created_task.id is not None
     )  # Check if an ID was assigned (meaning it was saved)
-    assert created_task.title == task_in.title
-    assert created_task.description == task_in.description
-    assert created_task.status == task_in.status
+    assert created_task.title == task.title
+    assert created_task.description == task.description
+    assert created_task.status == task.status
     assert created_task.created_at is not None
     assert created_task.updated_at is not None
 
@@ -67,7 +67,7 @@ def test_get_all_tasks_db_empty(session: Session):
     """
     Test listing all tasks when the database is empty.
     """
-    tasks = get_all_tasks_db(db=session)
+    tasks = get_all_tasks_from_db(db=session)
     assert isinstance(tasks, list)
     assert len(tasks) == 0
 
@@ -76,10 +76,10 @@ def test_get_all_tasks_db_with_one_task(session: Session):
     """
     Test listing all tasks when there is one task in the database.
     """
-    task_in = TaskCreate(title="Only Task", description="This is the only task.")
-    created_task = create_task_db(db=session, task_in=task_in)
+    task = TaskCreate(title="Only Task", description="This is the only task.")
+    created_task = create_task_in_db(db=session, task=task)
 
-    tasks = get_all_tasks_db(db=session)
+    tasks = get_all_tasks_from_db(db=session)
 
     assert len(tasks) == 1
     retrieved_task = tasks[0]
@@ -91,13 +91,13 @@ def test_get_all_tasks_db_with_multiple_tasks(session: Session):
     """
     Test listing all tasks when there are multiple tasks in the database.
     """
-    task1_in = TaskCreate(title="Task Alpha")
-    task2_in = TaskCreate(title="Task Beta", description="Second task")
+    task1 = TaskCreate(title="Task Alpha")
+    task2 = TaskCreate(title="Task Beta", description="Second task")
 
-    create_task_db(db=session, task_in=task1_in)
-    create_task_db(db=session, task_in=task2_in)
+    create_task_in_db(db=session, task=task1)
+    create_task_in_db(db=session, task=task2)
 
-    tasks = get_all_tasks_db(db=session)
+    tasks = get_all_tasks_from_db(db=session)
 
     assert len(tasks) == 2
 
@@ -130,7 +130,7 @@ def test_create_task_with_project(session: Session):
         description="A sub-task",
         project_id=project_obj.id,
     )
-    created_task = create_task_db(db=session, task_in=task_in)
+    created_task = create_task_in_db(db=session, task=task_in)
 
     assert created_task is not None
     assert created_task.project_id == project_obj.id

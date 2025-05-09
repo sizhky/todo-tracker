@@ -9,5 +9,8 @@ dummy-ui:
 dev-mcp:
 	mcp dev src/todo_tracker/mcp/server.py
 
-test:
+format:
+	ruff format
+	
+test: format
 	pytest -v --tb=short --disable-warnings --maxfail=1 tests
