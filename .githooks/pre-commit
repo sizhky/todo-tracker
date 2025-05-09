@@ -1,0 +1,34 @@
+#!/bin/sh
+echo "[DEBUG] pre-commit hook triggered" >&2
+
+# Get current branch
+branch=$(git symbolic-ref --short HEAD)
+
+# Get staged Python files
+staged_py_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
+
+# Format check only; do not modify files silently
+if [ -n "$staged_py_files" ]; then
+  if ! ruff format --check $staged_py_files; then
+    echo "❌ Ruff formatting issues found. Run: ruff format $staged_py_files"
+    exit 1
+  fi
+fi
+
+# version check only for main branch
+if [ "$branch" = "main" ]; then
+  if git diff --cached --name-only | grep -q "version"; then
+    echo "✅ version updated."
+  else
+    echo "❌ version must be updated on every commit to main."
+    exit 1
+  fi
+fi
+
+# make sure all tests are passing
+if ! pytest --maxfail=1 --disable-warnings -q; then
+  echo "❌ Tests failed. Please fix them before committing."
+  exit 1
+fi
+
+exit 0
