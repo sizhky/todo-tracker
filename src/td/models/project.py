@@ -6,7 +6,7 @@ from td.models.area import Area  # Assuming Area is in area.py
 
 
 # Forward declaration for type hinting relationships
-class Task(SQLModels):
+class Task(SQLModel):
     pass
 
 
