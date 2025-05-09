@@ -1,3 +1,5 @@
+.PHONY: tests
+
 ui:
 	python -m src.textual_ui
 	
@@ -6,3 +8,6 @@ dummy-ui:
 
 dev-mcp:
 	mcp dev src/todo_tracker/mcp/server.py
+
+test:
+	pytest -v --tb=short --disable-warnings --maxfail=1 tests

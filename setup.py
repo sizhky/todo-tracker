@@ -1,23 +1,20 @@
 from setuptools import setup, find_packages
 
+
 def readversion(filename):
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         return f.read().strip()
 
+
 setup(
-    name="todo-tracker",
-    version=readversion('src/todo_tracker/version'),
+    name="td",
+    version=readversion("src/td/version"),
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=[
-        'typer',
-        'torch-snippets',
-        'pandas',
-        'pydantic'
-    ],
+    install_requires=["typer", "torch-snippets", "pandas", "pydantic"],
     entry_points={
         "console_scripts": [
-            "todo=todo_tracker:cli",
+            "td=td:cli",
         ],
     },
     python_requires=">=3.8",

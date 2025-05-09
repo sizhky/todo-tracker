@@ -6,8 +6,10 @@ from textual.binding import Binding
 from .widgets.task_list import TaskList
 from todo_tracker.tasks.manager import TaskManager
 
+
 class TodoApp(App):
     """A Textual app to manage tasks."""
+
     task_manager = TaskManager()
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),
