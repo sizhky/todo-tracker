@@ -10,7 +10,11 @@ staged_py_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$'
 # Format check only; do not modify files silently
 if [ -n "$staged_py_files" ]; then
   if ! ruff format --check $staged_py_files; then
-    echo "❌ Ruff formatting issues found. Run: ruff format $staged_py_files"
+    echo "❌ Ruff formatting issues found. Run:\n----✂︎----------------------------------------------------------"
+    echo "ruff format \\"
+    echo "$staged_py_files" | sed 's/ /\n\t/g' | sed 's/^/\t/'
+    echo " ----✂︎----------------------------------------------------------"
+    echo "to fix those files, or just run 'ruff format' to fix the whole repo."
     exit 1
   fi
 fi

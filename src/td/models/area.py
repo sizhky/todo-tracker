@@ -14,7 +14,9 @@ class Area(SQLModel, table=True):
     description: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    projects: List["Project"] = Relationship(back_populates="area")
+    projects: List["Project"] = Relationship(
+        back_populates="area", sa_relationship_kwargs={"cascade": "all, delete"}
+    )
 
 
 class AreaCreate(SQLModel):
@@ -34,6 +36,10 @@ class AreaRead(SQLModel):
 class AreaUpdate(SQLModel):
     name: Optional[str] = None
     description: Optional[str] = None
+
+
+class AreaDelete(SQLModel):
+    id: int
 
 
 # Update model references if needed

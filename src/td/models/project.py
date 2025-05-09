@@ -2,7 +2,7 @@ from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime, timezone
 
-from td.models.area import Area  # Assuming Area is in area.py
+from .area import Area  # Assuming Area is in area.py
 
 
 # Forward declaration for type hinting relationships
@@ -12,7 +12,7 @@ class Task(SQLModel):
 
 class Project(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    name: str = Field(index=True)
+    name: str = Field(index=True, unique=True)
     description: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -20,7 +20,9 @@ class Project(SQLModel, table=True):
     area_id: Optional[int] = Field(default=None, foreign_key="area.id", index=True)
     area: Optional["Area"] = Relationship(back_populates="projects")
 
-    tasks: List["Task"] = Relationship(back_populates="project")
+    tasks: List["Task"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "all, delete"}
+    )
 
 
 class ProjectCreate(SQLModel):

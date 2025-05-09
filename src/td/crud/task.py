@@ -1,37 +1,10 @@
 from sqlmodel import Session, select
 from typing import List
+from sqlalchemy.orm import joinedload
 
 # Assuming your models are in ..models.task
 # Adjust the import path if necessary
-from ..models import Task, TaskCreate, Area, AreaCreate, Project, ProjectCreate
-
-
-def create_area_in_db(db: Session, area: AreaCreate) -> Area:
-    """
-    Create a new area in the database.
-    """
-    # Create an Area model instance from the AreaCreate schema
-    # SQLModel handles the conversion and validation.
-    db_area = Area.model_validate(area)
-
-    db.add(db_area)
-    db.commit()
-    db.refresh(db_area)  # Refresh to get the auto-generated ID and other DB defaults
-    return db_area
-
-
-def create_project_in_db(db: Session, project: ProjectCreate) -> Project:
-    """
-    Create a new project in the database.
-    """
-    # Create a Project model instance from the ProjectCreate schema
-    # SQLModel handles the conversion and validation.
-    db_project = Project.model_validate(project)
-
-    db.add(db_project)
-    db.commit()
-    db.refresh(db_project)  # Refresh to get the auto-generated ID and other DB defaults
-    return db_project
+from ..models import Task, TaskCreate, Project
 
 
 def create_task_in_db(db: Session, task: TaskCreate) -> Task:
@@ -50,11 +23,40 @@ def create_task_in_db(db: Session, task: TaskCreate) -> Task:
     return db_task
 
 
-def get_all_tasks_from_db(db: Session, skip: int = 0, limit: int = 100) -> List[Task]:
+def get_all_tasks_from_db(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    pending_only: bool = False,
+    as_hierarchy=False,
+) -> List[Task]:
     """
     Retrieve all tasks from the database with optional pagination.
     """
-    statement = select(Task).offset(skip).limit(limit)
+    if as_hierarchy:
+        statement = (
+            select(Task)
+            .options(joinedload(Task.project).joinedload(Project.area))
+            .offset(skip)
+            .limit(limit)
+        )
+    else:
+        statement = select(Task).offset(skip).limit(limit)
+        if pending_only:
+            statement = statement.where(Task.status == 0)
     results = db.exec(statement)
     tasks = results.all()
     return tasks
+
+
+def delete_task_from_db(db: Session, task_id: int) -> None:
+    """
+    Delete a task from the database by its ID.
+    """
+    statement = select(Task).where(Task.id == task_id)
+    task = db.exec(statement).first()
+    if task:
+        db.delete(task)
+        db.commit()
+    else:
+        print(f"Task with ID {task_id} not found.")

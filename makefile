@@ -6,8 +6,8 @@ ui:
 dummy-ui:
 	python -m src.learning_textual
 
-dev-mcp:
-	mcp dev src/todo_tracker/mcp/server.py
+mcp:
+	mcp dev src/td/mcp.py
 
 format:
 	ruff format

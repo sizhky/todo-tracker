@@ -6,12 +6,10 @@ from typing import Generator
 from td.models import (
     Task,
     TaskCreate,
-    TaskStatus,
     Project,
     Area,
 )  # Import all models used by metadata
 from td.crud.task import create_task_in_db, get_all_tasks_from_db
-# from td.core.settings import DATABASE_URL # We won't use the main DATABASE_URL for tests
 
 
 # Fixture to create a new in-memory SQLite database and session for each test function
@@ -41,7 +39,7 @@ def test_create_task_db(session: Session):
     Test creating a task in the database.
     """
     task = TaskCreate(
-        title="Test Task 1", description="Test Description 1", status=TaskStatus.PENDING
+        title="Test Task 1", description="Test Description 1", status=False
     )
 
     created_task = create_task_in_db(db=session, task=task)
