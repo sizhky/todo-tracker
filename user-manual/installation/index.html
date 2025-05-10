@@ -605,7 +605,12 @@
 </span></code></pre></div></p>
 </li>
 </ol>
-<p>After these steps, the <code>td</code> command should be available in your terminal. You can verify this by running:<br />
+<p>After these steps, the <code>td</code> command should be available in your terminal. </p>
+<div class="admonition fun-fact">
+<p class="admonition-title">Fun-fact</p>
+<p><code>td</code> is short for <code>todo</code></p>
+</div>
+<p>You can verify this by running:<br />
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>td --help
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Usage: td [OPTIONS] COMMAND [ARGS]...                                                                                                          
@@ -630,6 +635,47 @@
 </span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 </span></code></pre></div></p>
 <p>You can use <code>td onboard</code> to create a quick list of areas, projects and tasks to play with cli/api/mcp</p>
+<div class="admonition fun-fact">
+<p class="admonition-title">Fun-fact</p>
+<p>If you have tasks in your database - just <code>td</code> will list them down</p>
+</div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>td<span class="w"> </span>onboard
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>$<span class="w"> </span>td
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">                                             </span>title<span class="w"> </span>description<span class="w">  </span>id
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>area<span class="w">     </span>project<span class="w">                                                  </span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>home<span class="w">     </span>gym<span class="w">                     </span>Buy<span class="w"> </span>running<span class="w"> </span>shoes<span class="w">              </span><span class="m">18</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">         </span>gym<span class="w">                    </span>Get<span class="w"> </span>gym<span class="w"> </span>membership<span class="w">              </span><span class="m">19</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">         </span>gym<span class="w">                       </span>Join<span class="w"> </span>yoga<span class="w"> </span>class<span class="w">              </span><span class="m">20</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">         </span>home<span class="w">                      </span>Clean<span class="w"> </span>the<span class="w"> </span>house<span class="w">              </span><span class="m">21</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">         </span>home<span class="w">                      </span>Organize<span class="w"> </span>garage<span class="w">              </span><span class="m">22</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">         </span>home<span class="w">                           </span>Do<span class="w"> </span>laundry<span class="w">              </span><span class="m">23</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>office<span class="w">   </span>clients<span class="w">                 </span>Meet<span class="w"> </span>with<span class="w"> </span>clients<span class="w">              </span><span class="m">15</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">         </span>clients<span class="w">             </span>Prepare<span class="w"> </span>presentations<span class="w">              </span><span class="m">16</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">         </span>clients<span class="w">             </span>Send<span class="w"> </span>follow-up<span class="w"> </span>emails<span class="w">              </span><span class="m">17</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">         </span>desk<span class="w">                        </span>Organize<span class="w"> </span>desk<span class="w">              </span><span class="m">12</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">         </span>desk<span class="w">                        </span>Arrange<span class="w"> </span>files<span class="w">              </span><span class="m">13</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">         </span>desk<span class="w">                      </span>Set<span class="w"> </span>up<span class="w"> </span>computer<span class="w">              </span><span class="m">14</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">         </span>intro<span class="w">      </span>Schedule<span class="w"> </span>introductory<span class="w"> </span>meetings<span class="w">               </span><span class="m">8</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">         </span>intro<span class="w">        </span>Prepare<span class="w"> </span>onboarding<span class="w"> </span>documents<span class="w">               </span><span class="m">9</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">         </span>intro<span class="w">            </span>Set<span class="w"> </span>up<span class="w"> </span>new<span class="w"> </span>user<span class="w"> </span>accounts<span class="w">              </span><span class="m">10</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">         </span>intro<span class="w">             </span>Review<span class="w"> </span>company<span class="w"> </span>policies<span class="w">              </span><span class="m">11</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">         </span>supplies<span class="w">                         </span>Buy<span class="w"> </span>pens<span class="w">               </span><span class="m">1</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">         </span>supplies<span class="w">              </span>Order<span class="w"> </span>printer<span class="w"> </span>paper<span class="w">               </span><span class="m">2</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">         </span>supplies<span class="w">                </span>Purchase<span class="w"> </span>staplers<span class="w">               </span><span class="m">3</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>outdoor<span class="w">  </span>outdoor<span class="w">                     </span>Go<span class="w"> </span><span class="k">for</span><span class="w"> </span>a<span class="w"> </span>walk<span class="w">              </span><span class="m">24</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">         </span>outdoor<span class="w">                       </span>Plan<span class="w"> </span>a<span class="w"> </span>hike<span class="w">              </span><span class="m">25</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">         </span>outdoor<span class="w">                      </span>Visit<span class="w"> </span>a<span class="w"> </span>park<span class="w">              </span><span class="m">26</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>personal<span class="w"> </span>food<span class="w">                          </span>Cook<span class="w"> </span>dinner<span class="w">              </span><span class="m">30</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">         </span>food<span class="w">                        </span>Prepare<span class="w"> </span>lunch<span class="w">              </span><span class="m">31</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">         </span>food<span class="w">                       </span>Make<span class="w"> </span>breakfast<span class="w">              </span><span class="m">32</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">         </span>groceries<span class="w">                        </span>Buy<span class="w"> </span>milk<span class="w">               </span><span class="m">4</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">         </span>groceries<span class="w">                        </span>Get<span class="w"> </span>eggs<span class="w">               </span><span class="m">5</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">         </span>groceries<span class="w">                  </span>Purchase<span class="w"> </span>bread<span class="w">               </span><span class="m">6</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">         </span>groceries<span class="w">                     </span>Find<span class="w"> </span>cheese<span class="w">               </span><span class="m">7</span>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">         </span>groceries<span class="w">                   </span>Buy<span class="w"> </span>groceries<span class="w">              </span><span class="m">27</span>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">         </span>groceries<span class="w">                      </span>Plan<span class="w"> </span>meals<span class="w">              </span><span class="m">28</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">         </span>groceries<span class="w">                 </span>Organize<span class="w"> </span>pantry<span class="w">              </span><span class="m">29</span>
+</span></code></pre></div>
 
 
 
