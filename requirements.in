@@ -1,0 +1,8 @@
+typer
+torch-snippets
+pandas
+pydantic
+fastapi
+fastmcp
+sqlmodel
+fastcore==1.7.29

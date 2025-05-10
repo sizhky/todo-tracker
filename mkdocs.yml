@@ -1,0 +1,63 @@
+# mkdocs.yml
+site_name: Todo Tracker Documentation
+site_url: https://sizhky.github.io/todo-tracker/  # Replace with your details
+repo_url: https://github.com/sizhky/todo-tracker/ # Replace with your details
+edit_uri: edit/main/docs/ # Or your default branch and docs folder
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  language: en
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+      primary: indigo
+      accent: indigo
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+      primary: indigo
+      accent: indigo
+
+nav:
+  - Home: index.md
+  - User Manual:
+    - Install: user-manual/installation.md
+    - CLI Usage: user-manual/cli.md
+    - API Reference: user-manual/api.md
+    - MCP Guide: user-manual/mcp.md
+  - Technical Specifications: specs/technical-requirements.md
+
+# Optional: Specify the directory where your Markdown files are located
+# If your markdown files are in 'docs/', MkDocs finds them automatically.
+# If they are elsewhere, like directly in 'user-manual/' or 'specs/',
+# you might need to adjust the 'docs_dir' or ensure your nav paths are correct.
+# For your current structure, we'll assume your main docs_dir will be 'docs'.
+docs_dir: docs
+
+markdown_extensions:
+  - nl2br
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

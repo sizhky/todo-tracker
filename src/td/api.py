@@ -1,4 +1,4 @@
-from inspect import signature
+from inspect import signature, Parameter
 from typing import get_type_hints
 from pydantic import create_model
 from fastapi import FastAPI, Body
@@ -22,7 +22,15 @@ api.add_middleware(
 
 def process_command_context(command):
     """
-    Check if the context settings have a route.
+    Process the context settings of a CLI command to determine its API route and methods.
+
+    Args:
+        command: A Click command object with callback and context_settings attributes.
+
+    Returns:
+        An AD (AttributeDict) object containing:
+            - route: The API endpoint route path, defaulting to '/api/v1/{command_name}'.
+            - methods: HTTP methods allowed for this endpoint, defaulting to ["POST"].
     """
 
     _default_route = command.callback.__name__.replace("_", "/")
@@ -46,17 +54,46 @@ def process_command_context(command):
 
 
 def make_route_func(func, sig, hints):
-    fields = {
-        param.name: (
-            hints.get(param.name, str),
-            param.default if param.default != param.empty else ...,
-        )
-        for param in sig.parameters.values()
-    }
+    """
+    Create a FastAPI route function from a CLI command function.
+
+    This function dynamically creates a Pydantic model based on the function's signature
+    and type hints, then wraps the original function in an async route handler that
+    validates input data according to the model.
+
+    Args:
+        func: The original CLI function to be converted to an API route.
+        sig: The signature object of the function.
+        hints: Type hints dictionary for the function parameters.
+
+    Returns:
+        An async route function that can be used with FastAPI's add_api_route.
+    """
+    fields = {}
+    for param in sig.parameters.values():
+        annotation = hints.get(param.name, str)
+        default = ... if param.default == Parameter.empty else param.default
+        fields[param.name] = (annotation, default)
 
     Model = create_model(f"{func.__name__.capitalize()}Model", **fields)
 
     async def route_func(data: Model = Body(...)):  # noqa
+        """
+        FastAPI route handler that processes incoming request data.
+
+        This function validates the request data against the created Pydantic model,
+        calls the original CLI function with the validated data, and handles any
+        exceptions by returning appropriate HTTP error responses.
+
+        Args:
+            data: Request body data validated against the Pydantic model.
+
+        Returns:
+            The result of the original CLI function call.
+
+        Raises:
+            HTTPException: If an exception occurs during the function execution.
+        """
         kwargs = data.dict()
         try:
             return func(**kwargs)

@@ -20,6 +20,15 @@ def create_project(
 ):
     """
     Create a new project in the database.
+
+    Args:
+        name: Name of the project. Multiple projects can be created by providing comma-separated names.
+        description: Optional description for the project.
+        area: Name of the area to associate with the project. If not found, it will be created.
+        area_id: ID of the area to associate with the project. Takes precedence over area name.
+
+    Returns:
+        The ID of the created project. Prints confirmation message to console.
     """
 
     if area_id is None and area:
@@ -47,6 +56,13 @@ def create_project(
 def _list_projects(skip: int = 0, limit: int = 100):
     """
     List all projects in the database with optional pagination.
+
+    Args:
+        skip: Number of records to skip.
+        limit: Maximum number of records to return.
+
+    Returns:
+        An object containing project mappings (id2project, project2id) and project details as pandas DataFrame.
     """
     from torch_snippets import pd
 
@@ -70,6 +86,14 @@ def _list_projects(skip: int = 0, limit: int = 100):
 def list_projects(skip: int = 0, limit: int = 100):
     """
     List all projects in the database with optional pagination.
+
+    Args:
+        skip: Number of records to skip.
+        limit: Maximum number of records to return.
+
+    Returns:
+        JSON representation of projects if called from MCP, dictionary of projects if called from API,
+        or prints the project information to console.
     """
     x = _list_projects(skip=skip, limit=limit)
 
@@ -90,6 +114,13 @@ def delete_project(
 ):
     """
     Delete a project from the database by its name.
+
+    Args:
+        project: Name of the project to delete. Multiple projects can be deleted by providing comma-separated names.
+
+    Returns:
+        Project ID if called from MCP, dictionary with ID if called from API,
+        or prints confirmation message to console.
     """
     if "," in project:
         return [delete_project(name) for name in project.split(",")]

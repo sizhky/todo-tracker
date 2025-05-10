@@ -15,5 +15,5 @@ api:
 format:
 	ruff format
 	
-test: format
+test:
 	pytest -v --tb=short --disable-warnings --maxfail=1 tests

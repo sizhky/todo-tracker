@@ -23,6 +23,18 @@ def create_task(
 ):
     """
     Create a new task in the database.
+
+    Args:
+        title: Title of the task. Multiple tasks can be created by providing comma-separated titles.
+        description: Optional description for the task.
+        status: Task status (0 = pending, 1 = done). Default is 0.
+        project: Name of the project to associate with the task. If not found, it will be created.
+        project_id: ID of the project to associate with the task. Takes precedence over project name.
+        area: Name of the area to associate with the auto-created project (if needed).
+        area_id: ID of the area to associate with the auto-created project (if needed).
+
+    Returns:
+        None. Prints confirmation message to console.
     """
     if project_id is None and project:
         # Check if the project exists
@@ -65,6 +77,16 @@ def list_tasks(
 ):
     """
     List all tasks in the database with optional pagination.
+
+    Args:
+        skip: Number of records to skip.
+        limit: Maximum number of records to return.
+        pending_only: If True, only show tasks with status 0 (pending). Default is True.
+        as_hierarchy: If True, group tasks by area and project. Default is True.
+
+    Returns:
+        JSON representation of tasks if called from MCP, dictionary of tasks if called from API,
+        or prints the task information to console.
     """
     with session_scope() as session:
         tasks = get_all_tasks_from_db(
@@ -118,6 +140,12 @@ def delete_task(
 ):
     """
     Delete a task from the database by its id.
+
+    Args:
+        task_id: ID of the task to delete. Multiple tasks can be deleted by providing comma-separated IDs.
+
+    Returns:
+        None. Prints confirmation message or error to console.
     """
     if isinstance(task_id, str) and "," in task_id:
         return [delete_task(id) for id in task_id.split(",")]
@@ -139,6 +167,12 @@ def delete_task(
 def toggle_task(task_id: str):
     """
     Toggle the status of a task in the database by its id.
+
+    Args:
+        task_id: ID of the task to toggle. Multiple tasks can be toggled by providing comma-separated IDs.
+
+    Returns:
+        None. Prints confirmation message or error to console.
     """
     if isinstance(task_id, str) and "," in task_id:
         return [toggle_task(id) for id in task_id.split(",")]
