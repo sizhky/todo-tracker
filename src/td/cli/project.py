@@ -72,10 +72,14 @@ def list_projects(skip: int = 0, limit: int = 100):
     List all projects in the database with optional pagination.
     """
     x = _list_projects(skip=skip, limit=limit)
+
     if hasattr(list_projects, "from_mcp"):
         return x.projects.to_json(orient="records")
+    elif hasattr(list_projects, "from_api"):
+        return x.projects.to_dict(orient="records")
     else:
         print(x.projects)
+
     if not len(x.projects):
         print("No projects found.")
 
@@ -96,6 +100,13 @@ def delete_project(
                 raise ValueError(f"Project with name {project} not found.")
             # Assuming you have a function to delete a project
             delete_project_from_db(session, project_id)
-            print(f"Project with ID {project_id} deleted.")
+
+            if hasattr(delete_project, "from_mcp"):
+                return project_id
+            elif hasattr(delete_project, "from_api"):
+                return {"id": project_id}
+            else:
+                print(f"Project with ID {project_id} deleted.")
+
         except Exception as e:
             print(f"Error deleting project: {e}")

@@ -1,0 +1,18 @@
+meta {
+  name: List Areas
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/list/areas
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "skip": "",
+    "limit": ""
+  }
+}

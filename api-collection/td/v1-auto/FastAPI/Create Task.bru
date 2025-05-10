@@ -1,0 +1,23 @@
+meta {
+  name: Create Task
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/create/task
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "",
+    "description": "",
+    "status": "",
+    "project": "",
+    "project_id": "",
+    "area": "",
+    "area_id": ""
+  }
+}

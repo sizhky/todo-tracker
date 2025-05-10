@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 # Assuming your models are in ..models.task
 # Adjust the import path if necessary
-from ..models import Task, TaskCreate, Project
+from ..models import Task, TaskCreate, Project, TaskUpdate
 
 
 def create_task_in_db(db: Session, task: TaskCreate) -> Task:
@@ -60,3 +60,37 @@ def delete_task_from_db(db: Session, task_id: int) -> None:
         db.commit()
     else:
         print(f"Task with ID {task_id} not found.")
+
+
+def update_task_in_db(db: Session, task_id: int, task_data: TaskUpdate) -> Task:
+    """
+    Update an existing task in the database.
+    """
+    statement = select(Task).where(Task.id == task_id)
+    task = db.exec(statement).first()
+    task_data = TaskUpdate.model_validate(task_data)
+    if task:
+        for key, value in task_data.model_dump().items():
+            if value is None:
+                continue
+            setattr(task, key, value)
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+        return task
+    else:
+        print(f"Task with ID {task_id} not found.")
+        return None
+
+
+def get_task_by_id(db: Session, task_id: int) -> Task:
+    """
+    Retrieve a task from the database by its ID.
+    """
+    statement = select(Task).where(Task.id == task_id)
+    task = db.exec(statement).first()
+    if task:
+        return task
+    else:
+        print(f"Task with ID {task_id} not found.")
+        return None

@@ -1,0 +1,17 @@
+meta {
+  name: Delete Project
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/delete/project
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "project": ""
+  }
+}

@@ -1,5 +1,11 @@
 from ..core.db import session_scope
-from ..crud.task import create_task_in_db, get_all_tasks_from_db, delete_task_from_db
+from ..crud.task import (
+    create_task_in_db,
+    get_all_tasks_from_db,
+    delete_task_from_db,
+    update_task_in_db,
+    get_task_by_id,
+)
 
 from .__pre_init__ import cli
 from .project import _list_projects, create_project
@@ -95,8 +101,10 @@ def list_tasks(
             )
             if hasattr(list_tasks, "from_mcp"):
                 tasks = tasks.reset_index()
-                print(tasks.to_json(orient="records"))
                 return tasks.to_json(orient="records")
+            elif hasattr(list_tasks, "from_api"):
+                tasks = tasks.reset_index()
+                return tasks.to_dict(orient="records")
             print(tasks)
             return
         print(f"{len(tasks)} Pending task{'' if len(tasks) == 1 else 's'} found")
@@ -125,3 +133,29 @@ def delete_task(
             print(f"Task with ID {task_id} deleted.")
         except Exception as e:
             print(f"Error deleting task with ID {task_id}: {e}")
+
+
+@cli.command(name="tt")
+def toggle_task(task_id: str):
+    """
+    Toggle the status of a task in the database by its id.
+    """
+    if isinstance(task_id, str) and "," in task_id:
+        return [toggle_task(id) for id in task_id.split(",")]
+
+    try:
+        task_id = int(task_id)
+    except ValueError:
+        raise ValueError(f"Invalid task ID: {task_id}. Task ID must be an integer.")
+
+    with session_scope() as session:
+        try:
+            task = get_task_by_id(session, task_id)
+            task = update_task_in_db(
+                session, task_id, {"status": 1 if task.status == 0 else 0}
+            )
+            print(
+                f"Task with ID {task.id} toggled to {'done' if task.status == 1 else 'pending'}."
+            )
+        except Exception as e:
+            print(f"Error toggling task with ID {task_id}: {e}")

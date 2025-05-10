@@ -1,0 +1,17 @@
+meta {
+  name: Toggle Task
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/v1/toggle/task
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "task_id": ""
+  }
+}

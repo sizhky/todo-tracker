@@ -1,0 +1,18 @@
+meta {
+  name: List Projects
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/list/projects
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "skip": "",
+    "limit": ""
+  }
+}

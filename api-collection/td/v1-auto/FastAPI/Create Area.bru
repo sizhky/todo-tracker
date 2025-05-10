@@ -1,0 +1,18 @@
+meta {
+  name: Create Area
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/create/area
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "",
+    "description": ""
+  }
+}
