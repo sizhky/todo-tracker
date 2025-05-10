@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://sizhky.github.io/todo-tracker/</loc>
+         <lastmod>2025-05-10</lastmod>
+    </url>
+    <url>
+         <loc>https://sizhky.github.io/todo-tracker/specs/technical-requirements/</loc>
+         <lastmod>2025-05-10</lastmod>
+    </url>
+    <url>
+         <loc>https://sizhky.github.io/todo-tracker/user-manual/api/</loc>
+         <lastmod>2025-05-10</lastmod>
+    </url>
+    <url>
+         <loc>https://sizhky.github.io/todo-tracker/user-manual/cli/</loc>
+         <lastmod>2025-05-10</lastmod>
+    </url>
+    <url>
+         <loc>https://sizhky.github.io/todo-tracker/user-manual/installation/</loc>
+         <lastmod>2025-05-10</lastmod>
+    </url>
+    <url>
+         <loc>https://sizhky.github.io/todo-tracker/user-manual/mcp/</loc>
+         <lastmod>2025-05-10</lastmod>
+    </url>
+</urlset>
