@@ -94,10 +94,8 @@ def list_areas(skip: int = 0, limit: int = 100):
         return {"areas": [ad.d for ad in x.area_descriptions]}
 
     # cli output
-    for area_id, area in x.area_descriptions.items():
-        print(
-            f"Area ID: {area_id}, Name: {area.name}, Description: `{area.description}`"
-        )
+    for area in x.area_descriptions:
+        print(f"ID: {area.id} - {area.name}: `{area.description}`")
     if not x.area_descriptions:
         print("No areas found.")
 
@@ -126,7 +124,16 @@ def delete_area(
             area_id = _list_areas().area2id.get(area)
             if not area_id:
                 raise ValueError(f"Area with name {area} not found.")
-            delete_area_from_db(session, area_id)
-            print(f"Area with name {area} deleted successfully.")
+            deleted_area_id = delete_area_from_db(session, area_id)
+            if hasattr(delete_area, "from_api"):
+                return Response(
+                    write_json({"id": deleted_area_id}),
+                    status_code=status.HTTP_202_ACCEPTED,
+                )
+            elif hasattr(delete_area, "from_mcp"):
+                return {"id": deleted_area_id}
+            else:
+                print(f"Area `{area}` deleted with ID: {deleted_area_id}")
+                return deleted_area_id
         except ValueError as e:
             print(e)

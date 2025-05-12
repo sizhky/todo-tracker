@@ -1,6 +1,8 @@
-from torch_snippets import AD
+from torch_snippets import AD, write_json
 from typing_extensions import Annotated
 from typer import Argument
+from starlette.responses import Response
+from starlette import status
 
 from ..core.db import session_scope
 from ..crud.project import (
@@ -51,7 +53,18 @@ def create_project(
             "area_id": area_id,
         }
         created_project = create_project_in_db(session, project)
-        print(f"Project `{created_project.name}` created with ID: {created_project.id}")
+        if hasattr(create_project, "from_api"):
+            # return 201 created
+            return Response(
+                write_json({"id": created_project.id}),
+                status_code=status.HTTP_201_CREATED,
+            )
+        elif hasattr(create_project, "from_mcp"):
+            return {"id": created_project.id}
+        else:
+            print(
+                f"Project `{created_project.name}` created with ID: {created_project.id}"
+            )
         return created_project.id
 
 

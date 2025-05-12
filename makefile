@@ -10,7 +10,7 @@ mcp:
 	mcp dev src/td/mcp.py
 
 api:
-	uvicorn src/td/api.py
+	python src/td/api.py
 
 format:
 	ruff format

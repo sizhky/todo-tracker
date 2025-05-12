@@ -38,5 +38,6 @@ def delete_area_from_db(db: Session, area_id: int) -> None:
     if area:
         db.delete(area)
         db.commit()
+        return area.id
     else:
         raise ValueError(f"Area with ID {area_id} not found.")

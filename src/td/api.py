@@ -132,4 +132,4 @@ for command in cli.registered_commands:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("td.api:api", host="0.0.0.0", port=8765, reload=True)
+    uvicorn.run("td.api:api", host="127.0.0.1", port=8765, reload=True)

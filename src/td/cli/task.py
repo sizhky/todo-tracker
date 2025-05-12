@@ -1,5 +1,8 @@
 from typing_extensions import Annotated
+from starlette.responses import Response
+from starlette import status as http_status
 from typer import Option
+from torch_snippets import write_json
 
 from ..core.db import session_scope
 from ..crud.task import (
@@ -39,7 +42,13 @@ def create_task(
         ),
     ] = "default",
     project_id: int = None,
-    description: str = "",
+    description: Annotated[
+        str,
+        Option(
+            "-d",
+            help="Description of the task",
+        ),
+    ] = "",
     status: int = 0,
     area_id: int = None,
 ):
@@ -87,7 +96,17 @@ def create_task(
             "project_id": project_id,
         }
         created_task = create_task_in_db(session, task)
-        print(f"Task created with ID: {created_task.id}")
+        if hasattr(create_task, "from_api"):
+            # return 201 created
+            return Response(
+                write_json({"id": created_task.id}),
+                status_code=http_status.HTTP_201_CREATED,
+            )
+        elif hasattr(create_task, "from_mcp"):
+            return {"id": created_task.id}
+        else:
+            print(f"Task created with ID: {created_task.id}")
+        return created_task.id
 
 
 @cli.command(name="tl")
@@ -143,7 +162,7 @@ def list_tasks(
                 )
             tasks = (
                 pd.DataFrame(_tasks)[
-                    ["title", "description", "project", "area", "id", "task_time"]
+                    ["title", "id", "description", "project", "area", "task_time"]
                 ]
                 .set_index(["area", "project"])
                 .sort_index()
