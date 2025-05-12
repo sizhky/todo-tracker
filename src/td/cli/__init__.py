@@ -5,6 +5,7 @@ from .area import *
 from .project import *
 from .task import *
 from .time_entry import *
+from .db import *
 
 
 @cli.command(name="onboard")
@@ -17,6 +18,9 @@ def onboard():
     Returns:
         None. The function creates default data in the database.
     """
+    set_database("default")
+    remove_database("onboard")
+    set_database("onboard")
     create_area("office,personal,gym,home,outdoor")
     create_project("supplies,intro,desk,clients", area="office")
     create_project("groceries,food,clothes", area="personal")
@@ -65,3 +69,9 @@ def onboard():
     task_track(3, time_stamp="2023-10-01T12:00:00Z")
     task_track(4, time_stamp="2023-10-01T13:00:00Z")
     stop_time_entry(time_stamp="2023-10-01T14:00:00Z")
+    print(
+        "-"*10,
+        "\nOnboarding complete! Default areas, projects, and tasks have been created in the database - onboard.db\n"
+        "If you want to switch to a new personal database, use 'td dset <name>'\n",
+        "-"*10,
+    )

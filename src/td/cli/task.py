@@ -18,7 +18,7 @@ def create_task(
     status: int = 0,
     project: str = "default",
     project_id: int = None,
-    area: str = None,
+    area: str = "default",
     area_id: int = None,
 ):
     """
@@ -194,7 +194,7 @@ def toggle_task(task_id: str):
                 session, task_id, {"status": 1 if task.status == 0 else 0}
             )
             print(
-                f"Task with ID {task.id} toggled to {'done' if task.status == 1 else 'pending'}."
+                f"Task with ID {task.id} ({task.title}) toggled to {'done' if task.status == 1 else 'pending'}."
             )
         except Exception as e:
             print(f"Error toggling task with ID {task_id}: {e}")

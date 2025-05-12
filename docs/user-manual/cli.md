@@ -7,26 +7,53 @@ This document provides a reference for all available Command Line Interface (CLI
 
 Commands for swapping/switching active task database.
 
-### `td da` (database-active)
+### `td db.a` (database-active)
 
 Print the path active sqlite database
 ```bash
-$ td da
+$ td db.a
+Active database link: '/Users/yeshwanth/.todo/active.db'
+ -> Points to: '/Users/yeshwanth/.todo/tracker.db'
 ```
 
-### `td dl` (database-list)
+### `td db.l` (database-list)
 
 List the available databases
 ```bash
-$ td dl
+$ td db.l
+Available databases in '/Users/yeshwanth/.todo':
+- default.db
+- onboard.db
+- tracker.db (active)
+- yolo.db
+
+The active database link 'active.db' currently points to 'tracker.db'.
 ```
 
-### `td dset` (database-set)
+### `td db.set` (database-set)
 
 Set a specific database as current active
 ```bash
-$ td dset dev
+$ td db.set yolo
+Success! Active database link 'active.db' now points to 'yolo.db'.
+The application will use '/Users/yeshwanth/.todo/yolo.db' for all subsequent operations.
+Using existing database file '/Users/yeshwanth/.todo/yolo.db'.
+
+
+$ td db.set yolox
+Success! Active database link 'active.db' now points to 'yolox.db'.
+The application will use '/Users/yeshwanth/.todo/yolox.db' for all subsequent operations.
+Creating tables in new database '/Users/yeshwanth/.todo/yolox.db'...
 ```
+
+### `td db.rm` (database-remove)
+
+```bash
+$ td db.rm yolox
+```
+
+!!! fun-fact
+    Autocompletion for `db.set` and `db.rm` work by listing the files at `~/.todo/*.db`
 
 ## Area Commands
 
