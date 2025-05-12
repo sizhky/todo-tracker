@@ -216,7 +216,6 @@ def toggle_task(task_id: str):
 
     Args:
         task_id: ID of the task to toggle. Multiple tasks can be toggled by providing comma-separated IDs.
-
     Returns:
         None. Prints confirmation message or error to console.
     """
@@ -231,11 +230,9 @@ def toggle_task(task_id: str):
     with session_scope() as session:
         try:
             task = get_task_by_id(session, task_id)
-            task = update_task_in_db(
-                session, task_id, {"status": 1 if task.status == 0 else 0}
-            )
-            print(
-                f"Task with ID {task.id} ({task.title}) toggled to {'done' if task.status == 1 else 'pending'}."
-            )
+            task_status = 0 if task.status else 1
+
+            task = update_task_in_db(session, task_id, {"status": task_status})
+            print(f"Task with ID {task.id} ({task.title}) toggled to {task_status}.")
         except Exception as e:
             print(f"Error toggling task with ID {task_id}: {e}")
