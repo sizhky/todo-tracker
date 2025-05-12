@@ -70,8 +70,8 @@ def onboard():
     task_track(4, time_stamp="2023-10-01T13:00:00Z")
     stop_time_entry(time_stamp="2023-10-01T14:00:00Z")
     print(
-        "-"*10,
+        "-" * 10,
         "\nOnboarding complete! Default areas, projects, and tasks have been created in the database - onboard.db\n"
         "If you want to switch to a new personal database, use 'td dset <name>'\n",
-        "-"*10,
+        "-" * 10,
     )
