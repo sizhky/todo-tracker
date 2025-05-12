@@ -44,7 +44,7 @@ def create_area(
         elif hasattr(create_area, "from_mcp"):
             return response
         else:
-            print(f"Area created with ID: {created_area.id}")
+            print(f"Area `{created_area.name}` created with ID: {created_area.id}")
             return created_area.id
 
 

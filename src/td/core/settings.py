@@ -1,4 +1,5 @@
 # src/td/core/settings.py
+import os
 from pathlib import Path
 
 # For SQLite, you can use a file-based database or an in-memory database.
@@ -9,7 +10,9 @@ DEFAULT_DB_NAME = "default.db"  # Default database name
 DB_PATH = DB_DIR / DEFAULT_DB_NAME
 DB_PATH.touch(exist_ok=True)  # Create the database file if it doesn't exist
 # Symlink name for the active database
-ACTIVE_DB_LINK_FILENAME = "active.db"  # Symlink name for the active database
+ACTIVE_DB_LINK_FILENAME = os.environ.get(
+    "TDDB_NAME", "active.db"
+)  # Symlink name for the active database
 # Symlink path for the active database
 ACTIVE_DB_LINK_PATH = DB_DIR / ACTIVE_DB_LINK_FILENAME
 # Symlink to the active database

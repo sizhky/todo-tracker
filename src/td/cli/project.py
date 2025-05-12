@@ -51,7 +51,7 @@ def create_project(
             "area_id": area_id,
         }
         created_project = create_project_in_db(session, project)
-        print(f"Project created with ID: {created_project.id}")
+        print(f"Project `{created_project.name}` created with ID: {created_project.id}")
         return created_project.id
 
 
