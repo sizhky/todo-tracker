@@ -111,13 +111,18 @@ def list_tasks(
                         "description": task.description,
                         "status": task.status,
                         "project": task.project.name if task.project else None,
-                        "area": task.project.area.name
-                        if task.project and task.project.area
-                        else None,
+                        "area": (
+                            task.project.area.name
+                            if task.project and task.project.area
+                            else None
+                        ),
+                        "task_time": task.total_time_seconds,
                     }
                 )
             tasks = (
-                pd.DataFrame(_tasks)[["title", "description", "project", "area", "id"]]
+                pd.DataFrame(_tasks)[
+                    ["title", "description", "project", "area", "id", "task_time"]
+                ]
                 .set_index(["area", "project"])
                 .sort_index()
             )

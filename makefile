@@ -17,3 +17,6 @@ format:
 	
 test:
 	pytest -v --tb=short --disable-warnings --maxfail=1 tests
+
+deploy-docs:
+	mkdocs gh-deploy

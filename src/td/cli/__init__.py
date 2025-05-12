@@ -4,6 +4,7 @@ from .__pre_init__ import cli
 from .area import *
 from .project import *
 from .task import *
+from .time_entry import *
 
 
 @cli.command(name="onboard")
@@ -59,3 +60,8 @@ def onboard():
     create_task(
         "Cook dinner,Prepare lunch,Make breakfast", project="food", area="personal"
     )
+    task_track(1, time_stamp="2023-10-01T10:00:00Z")
+    task_track(2, time_stamp="2023-10-01T11:00:00Z")
+    task_track(3, time_stamp="2023-10-01T12:00:00Z")
+    task_track(4, time_stamp="2023-10-01T13:00:00Z")
+    stop_time_entry(time_stamp="2023-10-01T14:00:00Z")
