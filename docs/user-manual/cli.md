@@ -119,6 +119,8 @@ Prints a confirmation message or error to the console.
     td ad area1,area2,area3
     ```
 
+    Also, autocomplete is available here
+
 ---
 
 ## Project Commands
@@ -188,6 +190,8 @@ Prints a confirmation message with the ID of the deleted project or an error to 
     td pd "Old Project X,Archived Initiative Y"
     ```
 
+    Also autocomplete is available here
+
 ---
 
 ## Task Commands
@@ -220,6 +224,10 @@ Prints a confirmation message with the ID of the created task to the console.
     td tc "Design homepage,Develop API endpoints,Write tests" --project "Website Launch" --area "Marketing Q3"
     ```
     If "Website Launch" project or "Marketing Q3" area don't exist, they will be created.
+
+    -p: project (with autocompletion)
+    -a: area (with autocompletion)
+    -d: description
 
 ---
 

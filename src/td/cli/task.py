@@ -32,7 +32,7 @@ def create_task(
             help="Name of the project to associate with the task",
             autocompletion=__list_projects,
         ),
-    ] = "default",
+    ] = "inbox",
     area: Annotated[
         str | None,
         Option(
@@ -40,7 +40,7 @@ def create_task(
             help="Name of the area to associate with the task",
             autocompletion=__list_areas,
         ),
-    ] = "default",
+    ] = "uncategorized",
     project_id: int = None,
     description: Annotated[
         str,
