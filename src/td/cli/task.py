@@ -1,3 +1,6 @@
+from typing_extensions import Annotated
+from typer import Option
+
 from ..core.db import session_scope
 from ..crud.task import (
     create_task_in_db,
@@ -8,17 +11,36 @@ from ..crud.task import (
 )
 
 from .__pre_init__ import cli
-from .project import _list_projects, create_project
+from .area import _list_areas
+from .project import _list_projects, create_project, __list_projects
+
+
+def __list_areas():
+    return _list_areas().areas.area_name.tolist()
 
 
 @cli.command(name="tc")
 def create_task(
     title: str,
+    project: Annotated[
+        str | None,
+        Option(
+            "-p",
+            help="Name of the project to associate with the task",
+            autocompletion=__list_projects,
+        ),
+    ] = "default",
+    area: Annotated[
+        str | None,
+        Option(
+            "-a",
+            help="Name of the area to associate with the task",
+            autocompletion=__list_areas,
+        ),
+    ] = "default",
+    project_id: int = None,
     description: str = "",
     status: int = 0,
-    project: str = "default",
-    project_id: int = None,
-    area: str = "default",
     area_id: int = None,
 ):
     """

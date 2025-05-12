@@ -1,6 +1,8 @@
 from torch_snippets import AD, write_json
 from starlette.responses import Response
 from starlette import status
+from typing_extensions import Annotated
+from typer import Argument
 
 from ..crud.area import create_area_in_db, get_all_areas_from_db, delete_area_from_db
 from ..core.db import session_scope
@@ -66,6 +68,11 @@ def _list_areas(skip: int = 0, limit: int = 100):
         return o
 
 
+def __list_areas():
+    o = _list_areas()
+    return list(o.area2id.keys())
+
+
 @cli.command(name="al")
 def list_areas(skip: int = 0, limit: int = 100):
     """
@@ -97,7 +104,9 @@ def list_areas(skip: int = 0, limit: int = 100):
 
 @cli.command(name="ad")
 def delete_area(
-    area: str,
+    area: Annotated[
+        str, Argument(help="Name of the area to delete.", autocompletion=__list_areas)
+    ],
 ):
     """
     Delete an area from the database by its name.

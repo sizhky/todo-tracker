@@ -1,4 +1,6 @@
 from torch_snippets import AD
+from typing_extensions import Annotated
+from typer import Argument
 
 from ..core.db import session_scope
 from ..crud.project import (
@@ -82,6 +84,10 @@ def _list_projects(skip: int = 0, limit: int = 100):
         return AD(id2project, project2id, projects)
 
 
+def __list_projects():
+    return _list_projects().projects.project_name.tolist()
+
+
 @cli.command(name="pl")
 def list_projects(skip: int = 0, limit: int = 100):
     """
@@ -110,7 +116,13 @@ def list_projects(skip: int = 0, limit: int = 100):
 
 @cli.command(name="pd")
 def delete_project(
-    project: str,
+    project: Annotated[
+        str,
+        Argument(
+            help="Name of the project to associate with the task",
+            autocompletion=__list_projects,
+        ),
+    ],
 ):
     """
     Delete a project from the database by its name.
@@ -126,7 +138,7 @@ def delete_project(
         return [delete_project(name) for name in project.split(",")]
     with session_scope() as session:
         try:
-            project_id = _list_projects(return_ids=True).project2id.get(project)
+            project_id = _list_projects().project2id.get(project)
             if not project_id:
                 raise ValueError(f"Project with name {project} not found.")
             # Assuming you have a function to delete a project
