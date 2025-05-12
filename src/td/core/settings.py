@@ -5,8 +5,24 @@ from pathlib import Path
 # File-based:
 DB_DIR = Path.home() / ".todo"
 DB_DIR.mkdir(parents=True, exist_ok=True)
+DEFAULT_DB_NAME = "default.db"  # Default database name
+DB_PATH = DB_DIR / DEFAULT_DB_NAME
+DB_PATH.touch(exist_ok=True)  # Create the database file if it doesn't exist
+# Symlink name for the active database
+ACTIVE_DB_LINK_FILENAME = "active.db"  # Symlink name for the active database
+# Symlink path for the active database
+ACTIVE_DB_LINK_PATH = DB_DIR / ACTIVE_DB_LINK_FILENAME
+# Symlink to the active database
+if not ACTIVE_DB_LINK_PATH.exists():
+    # Create a symlink to the default database if it doesn't exist
+    try:
+        ACTIVE_DB_LINK_PATH.symlink_to(DB_PATH)
+    except FileExistsError:
+        pass  # Symlink already exists, do nothing
+    except OSError as e:
+        print(f"Error creating symlink: {e}")
 
-DATABASE_URL = f"sqlite:///{DB_DIR / 'td.db'}"
+DATABASE_URL = f"sqlite:///{ACTIVE_DB_LINK_PATH}"
 
 # In-memory (useful for testing, data is lost when app stops):
 # DATABASE_URL = "sqlite:///:memory:"

@@ -1,8 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING  # Added TYPE_CHECKING
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime, timezone
 
-from .area import Area  # Assuming Area is in area.py
+# Assuming Area is in area.py
+if TYPE_CHECKING:  # Added this block
+    from .area import Area, AreaRead
 
 
 # Forward declaration for type hinting relationships
@@ -38,7 +40,7 @@ class ProjectRead(SQLModel):
     area_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
-    # area: Optional["AreaRead"] = None # If you want to nest area details
+    area: Optional["AreaRead"] = None  # Ensure AreaRead is available
     # tasks: List["TaskRead"] = [] # If you want to nest task details
 
 

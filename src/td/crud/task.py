@@ -4,7 +4,8 @@ from sqlalchemy.orm import joinedload
 
 # Assuming your models are in ..models.task
 # Adjust the import path if necessary
-from ..models import Task, TaskCreate, Project, TaskUpdate
+from ..models import Task, TaskCreate, Project, TaskUpdate, TaskRead
+from ..crud.time_entry import calculate_total_time_for_task
 
 
 def create_task_in_db(db: Session, task: TaskCreate) -> Task:
@@ -29,24 +30,30 @@ def get_all_tasks_from_db(
     limit: int = 100,
     pending_only: bool = False,
     as_hierarchy=False,
-) -> List[Task]:
+) -> List[TaskRead]:
     """
     Retrieve all tasks from the database with optional pagination.
+    Includes total time spent on each task.
     """
+    query_options = []
     if as_hierarchy:
-        statement = (
-            select(Task)
-            .options(joinedload(Task.project).joinedload(Project.area))
-            .offset(skip)
-            .limit(limit)
-        )
-    else:
-        statement = select(Task).offset(skip).limit(limit)
-        if pending_only:
-            statement = statement.where(Task.status == 0)
-    results = db.exec(statement)
-    tasks = results.all()
-    return tasks
+        query_options.append(joinedload(Task.project).joinedload(Project.area))
+
+    statement = select(Task).options(*query_options).offset(skip).limit(limit)
+
+    if pending_only:
+        statement = statement.where(Task.status == False)  # noqa
+
+    db_tasks = db.exec(statement).all()
+
+    tasks_with_time = []
+    for db_task in db_tasks:
+        total_time = calculate_total_time_for_task(db, db_task.id)
+        task_read = TaskRead.model_validate(db_task)  # Convert Task to TaskRead
+        task_read.total_time_seconds = total_time
+        tasks_with_time.append(task_read)
+
+    return tasks_with_time
 
 
 def delete_task_from_db(db: Session, task_id: int) -> None:
