@@ -30,7 +30,7 @@ if [ "$branch" = "main" ]; then
 fi
 
 # make sure all tests are passing
-if ! pytest --maxfail=1 --disable-warnings -q; then
+if ! /Users/yeshwanth/Code/Personal/todo-tracker/.venv/bin/pytest --maxfail=1 --disable-warnings -q; then
   echo "❌ Tests failed. Please fix them before committing."
   exit 1
 fi
