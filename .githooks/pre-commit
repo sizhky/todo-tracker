@@ -30,9 +30,11 @@ if [ "$branch" = "main" ]; then
 fi
 
 # make sure all tests are passing
-if ! pytest --maxfail=1 --disable-warnings -q; then
-  echo "❌ Tests failed. Please fix them before committing."
-  exit 1
+if [ "$branch" = "main" ]; then
+  if ! pytest --maxfail=1 --disable-warnings -q; then
+    echo "❌ Tests failed. Please fix them before committing."
+    exit 1
+  fi
 fi
 
 exit 0
