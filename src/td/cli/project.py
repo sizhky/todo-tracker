@@ -1,6 +1,6 @@
 from torch_snippets import AD, write_json
 from typing_extensions import Annotated
-from typer import Argument
+from typer import Argument, Option
 from starlette.responses import Response
 from starlette import status
 
@@ -12,14 +12,21 @@ from ..crud.project import (
 )
 
 from .__pre_init__ import cli
-from .area import _list_areas, create_area
+from .area import _list_areas, create_area, __list_areas
 
 
 @cli.command(name="pc")
 def create_project(
     name: str,
     description: str = "",
-    area: str = "default",
+    area: Annotated[
+        str,
+        Option(
+            "-a",
+            help="Name of the area to associate with the project",
+            autocompletion=__list_areas,
+        ),
+    ] = "uncategorized",
     area_id: int = None,
 ):
     """

@@ -47,10 +47,9 @@ Creating tables in new database '/Users/yeshwanth/.todo/yolox.db'...
 ```
 
 !!! fun-fact
-    if you want to use multiple dbs at once across different teminal sessions, set the variable `TD_DB` 
-    to a new name such as `active2` and set your second db in that session as active
-    the second db will have a new softlink called `active2.db` in the `~/.todo` folder and this pointer
-    is used as the active db for the terminal session
+    if you want to use multiple dbs at once across different teminal sessions, set the variable `TDDB` 
+    to your database and code will automatically pick it up from `~/.todo` folder and use it
+    as the active db for the terminal session
 
 ### `td db.rm` (database-remove)
 

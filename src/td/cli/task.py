@@ -12,14 +12,17 @@ from ..crud.task import (
     update_task_in_db,
     get_task_by_id,
 )
+from ..crud.time_entry import (
+    TimeEntryCreate,
+    TimeEntryUpdate,
+    create_time_entry_in_db,
+    update_time_entry_in_db,
+    get_active_time_entry_for_task_from_db,
+)
 
 from .__pre_init__ import cli
-from .area import _list_areas
+from .area import __list_areas
 from .project import _list_projects, create_project, __list_projects
-
-
-def __list_areas():
-    return _list_areas().areas.area_name.tolist()
 
 
 @cli.command(name="tc")
@@ -32,7 +35,7 @@ def create_task(
             help="Name of the project to associate with the task",
             autocompletion=__list_projects,
         ),
-    ] = "inbox",
+    ] = None,
     area: Annotated[
         str | None,
         Option(
@@ -40,8 +43,7 @@ def create_task(
             help="Name of the area to associate with the task",
             autocompletion=__list_areas,
         ),
-    ] = "uncategorized",
-    project_id: int = None,
+    ] = None,
     description: Annotated[
         str,
         Option(
@@ -49,7 +51,24 @@ def create_task(
             help="Description of the task",
         ),
     ] = "",
+    start_time: Annotated[
+        str | None,
+        Option(
+            "-s",
+            "--start",
+            help="Start time for the task in ISO format (e.g., 2023-10-01T12:00:00)",
+        ),
+    ] = None,
+    end_time: Annotated[
+        str | None,
+        Option(
+            "-e",
+            "--end",
+            help="End time for the task in ISO format (e.g., 2023-10-01T12:00:00)",
+        ),
+    ] = None,
     status: int = 0,
+    project_id: int = None,
     area_id: int = None,
 ):
     """
@@ -67,6 +86,15 @@ def create_task(
     Returns:
         None. Prints confirmation message to console.
     """
+    if end_time is not None and start_time is None:
+        raise ValueError("start_time must be provided if end_time is specified.")
+    default_area = "uncategorized"
+    default_project = "inbox"
+    if area and not project:
+        project = area
+    if project is None:
+        project = default_project
+        area = default_area
     if project_id is None and project:
         # Check if the project exists
         project_id = _list_projects().project2id.get(project)
@@ -81,6 +109,9 @@ def create_task(
         raise ValueError("Either project or project_id must be provided.")
 
     if "," in title:
+        assert start_time is None and end_time is None, (
+            "start_time and end_time are not supported for multiple tasks."
+        )
         return [
             create_task(
                 title, description=description, status=status, project_id=project_id
@@ -96,6 +127,13 @@ def create_task(
             "project_id": project_id,
         }
         created_task = create_task_in_db(session, task)
+        if start_time is not None:
+            time_entry = TimeEntryCreate(
+                task_id=created_task.id,
+                start_time=start_time,
+                end_time=end_time,
+            )
+            create_time_entry_in_db(session, time_entry)
         if hasattr(create_task, "from_api"):
             # return 201 created
             return Response(
@@ -137,6 +175,12 @@ def list_tasks(
             pending_only=pending_only,
             as_hierarchy=as_hierarchy,
         )
+        active_time_entry = get_active_time_entry_for_task_from_db(
+            session, task_id=None
+        )
+        active_task_id = None
+        if active_time_entry:
+            active_task_id = active_time_entry.task_id
         if not tasks:
             print("No tasks found.")
             return
@@ -145,10 +189,11 @@ def list_tasks(
 
             _tasks = []
             for task in tasks:
+                title = task.title if task.id != active_task_id else f"*{task.title}"
                 _tasks.append(
                     {
                         "id": task.id,
-                        "title": task.title,
+                        "title": title,
                         "description": task.description,
                         "status": task.status,
                         "project": task.project.name if task.project else None,
@@ -218,6 +263,7 @@ def toggle_task(task_id: str):
         task_id: ID of the task to toggle. Multiple tasks can be toggled by providing comma-separated IDs.
     Returns:
         None. Prints confirmation message or error to console.
+        If the task has an active time entry, it will be stopped.
     """
     if isinstance(task_id, str) and "," in task_id:
         return [toggle_task(id) for id in task_id.split(",")]
@@ -231,8 +277,20 @@ def toggle_task(task_id: str):
         try:
             task = get_task_by_id(session, task_id)
             task_status = 0 if task.status else 1
-
             task = update_task_in_db(session, task_id, {"status": task_status})
+            _time_entry = get_active_time_entry_for_task_from_db(session, task_id)
+            if task.status == 1 and _time_entry:
+                from datetime import datetime
+
+                end_time = datetime.now()
+                time_entry = TimeEntryUpdate(
+                    task_id=task.id,
+                    end_time=end_time,
+                )
+                update_time_entry_in_db(session, _time_entry.id, time_entry)
+                print(
+                    f"Timer stopped for task '{task.title}' (ID: {task.id}). Entry ID: {_time_entry.id}."
+                )
             print(f"Task with ID {task.id} ({task.title}) toggled to {task_status}.")
         except Exception as e:
             print(f"Error toggling task with ID {task_id}: {e}")
