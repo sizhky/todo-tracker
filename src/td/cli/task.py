@@ -153,6 +153,7 @@ def list_tasks(
     limit: int = 100,
     pending_only: bool = True,
     as_hierarchy: bool = True,
+    as_string: bool = False,
 ):
     """
     List all tasks in the database with optional pagination.
@@ -218,11 +219,65 @@ def list_tasks(
             elif hasattr(list_tasks, "from_api"):
                 tasks = tasks.reset_index()
                 return tasks.to_dict(orient="records")
+            elif as_string:
+                tasks = tasks.reset_index()
+                return tasks
             print(tasks)
             return
         print(f"{len(tasks)} Pending task{'' if len(tasks) == 1 else 's'} found")
         for task in tasks:
             print(f"ID: {task.id}, Title: {task.title}")
+
+
+@cli.command(name="tw")
+def watch_tasks():
+    import time
+    import sys
+    from datetime import datetime
+
+    try:
+        # Hide cursor for cleaner display
+        print("\033[?25l", end="")
+
+        # Get initial terminal size and task data
+        tasks_data = list_tasks(as_string=True)
+        lines_count = len(str(tasks_data).split("\n"))
+
+        while True:
+            # Move cursor to beginning
+            print("\033[H", end="")
+
+            # Get updated tasks
+            tasks_data = list_tasks(as_string=True)
+
+            # Display timestamp and tasks
+            now = datetime.now().strftime("%H:%M:%S")
+            print(f"Tasks as of {now} (Press Ctrl+C to exit)")
+            print(tasks_data)
+
+            # Clear any remaining lines from previous output
+            current_lines = (
+                len(str(tasks_data).split("\n")) + 2
+            )  # +2 for timestamp and header
+            if lines_count > current_lines:
+                for _ in range(lines_count - current_lines):
+                    print("\033[K")  # Clear line
+                lines_count = current_lines
+            else:
+                lines_count = current_lines
+
+            # Ensure output is displayed immediately
+            sys.stdout.flush()
+
+            # Wait before refresh
+            time.sleep(1)
+    except KeyboardInterrupt:
+        # Show cursor again before exiting
+        print("\033[?25h", end="")
+        return
+    finally:
+        # Ensure cursor is visible even if there's an error
+        print("\033[?25h", end="")
 
 
 @cli.command(name="td")
