@@ -2,7 +2,16 @@ from sqlmodel import Session, select
 from typing import List
 from sqlalchemy.orm import joinedload
 
-from ..models import Project, ProjectCreate, ProjectRead, ProjectUpdate
+from ...models.v1 import Project, ProjectCreate, ProjectRead, ProjectUpdate
+
+__all__ = [
+    "create_project_in_db",
+    "get_all_projects_from_db",
+    "get_project_by_id",
+    "update_project_in_db",
+    "delete_project_from_db",
+    "get_projects_by_area_id",
+]
 
 __all__ = [
     "create_project_in_db",

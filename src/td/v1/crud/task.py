@@ -4,7 +4,11 @@ from sqlalchemy.orm import joinedload
 
 # Assuming your models are in ..models.task
 # Adjust the import path if necessary
+<<<<<<<< HEAD:src/td/v1/crud/task.py
 from ..models import Task, TaskCreate, Project, TaskUpdate, TaskRead
+========
+from ...models.v1 import Task, TaskCreate, Project, TaskUpdate, TaskRead
+>>>>>>>> 92d1087 (make crud and models as v1):src/td/v1/crud/v1/task.py
 from .time_entry import calculate_total_time_for_task
 
 __all__ = [
