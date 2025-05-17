@@ -1,219 +1,125 @@
-from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
-from uuid import UUID
-import json
-
+from torch_snippets import AD
+from typing import Type, TypeVar, Optional, List
+from pydantic import BaseModel
 from sqlmodel import Session, select
+from ..models.nodes import Node, NodeType
+from ..core.db import engine  # Import the engine to create a session if needed
 
-from ...models.v2.node import Node, NodeType
+from rich import print
 
-__all__ = [
-    "create_node_in_db",
-    "get_node_by_id",
-    "get_children_of_node",
-    "update_node_in_db",
-    "delete_node_from_db",
-    "get_nodes_by_type",
-    "get_root_sectors",
-    "update_node_order",
-    "update_node_parent",
-    "get_node_path",
-]
+SchemaIn = TypeVar("SchemaIn")
+SchemaOut = TypeVar("SchemaOut")
 
 
-def create_node_in_db(
-    db: Session,
-    title: str,
-    type: NodeType,
-    parent_id: Optional[UUID] = None,
-    order: Optional[float] = None,
-    meta: Dict[str, Any] = None,
-) -> Node:
-    """
-    Create a new node (sector, area, project, section, task, subtask) in the database.
-    """
-    # Validate parent_id if provided
-    if parent_id:
-        parent = get_node_by_id(db, parent_id)
-        if not parent:
-            raise ValueError(f"Parent node with ID {parent_id} not found")
+class NodeCrud:
+    def __init__(
+        self,
+        node_type: NodeType,
+        schema_out: Type[SchemaOut],
+        db: Optional[Session] = None,
+    ):
+        self.node_type = node_type
+        self.schema_out = schema_out
+        self.db = db if db is not None else Session(engine)
+        self.should_close_db = db is None  # Track if we created the session
 
-        # Check parent-child relationship logic
-        if parent.type.value >= type.value:
-            raise ValueError(f"A {type.name} cannot be a child of a {parent.type.name}")
+    def __del__(self):
+        # Close the session if we created it
+        if (
+            hasattr(self, "should_close_db")
+            and self.should_close_db
+            and hasattr(self, "db")
+        ):
+            self.db.close()
 
-    # Create node with metadata as JSON string
-    meta_json = "{}" if meta is None else json.dumps(meta)
+    @property
+    def source(self):
+        return getattr(self, "_source", None)
 
-    node = Node(
-        title=title, type=type, parent_id=parent_id, order=order, meta=meta_json
-    )
+    def create(self, data: SchemaIn) -> SchemaOut:
+        data_dict = data.dict()
+        parent_type = data_dict.pop("parent_title", None)
+        if parent_type:
+            parent_node = self.db.exec(
+                select(Node).where(Node.title == parent_type)
+            ).first()
+            if not parent_node:
+                raise ValueError(f"Parent node with title '{parent_type}' not found")
+            data_dict["parent_id"] = parent_node.id
 
-    db.add(node)
-    db.commit()
-    db.refresh(node)
-    return node
+        if "type" not in data_dict:
+            data_dict["type"] = self.node_type
+        node = Node(**data_dict)
+        self.db.add(node)
+        self.db.commit()
+        self.db.refresh(node)
+        o = self.schema_out.from_orm(node)
+        if self.source == "cli":
+            print(o)
+        return o
 
+    def read(self, data: SchemaIn) -> Optional[SchemaOut]:
+        data_dict = data.dict()
+        node_id = data_dict.pop("id", None)
+        if node_id is None:
+            raise ValueError("Node ID is required for read")
+        node = self.db.get(Node, node_id)
+        if node is None or node.type != self.node_type:
+            return None
+        o = self.schema_out.from_orm(node)
+        if self.source == "cli":
+            print(o)
+        return o
 
-def get_node_by_id(db: Session, node_id: UUID) -> Optional[Node]:
-    """
-    Retrieve a node by its ID.
-    """
-    return db.get(Node, node_id)
+    def read_all(self) -> List[SchemaOut]:
+        nodes = self.db.exec(select(Node).where(Node.type == self.node_type)).all()
+        o = [self.schema_out.from_orm(n) for n in nodes]
+        if self.source == "cli":
+            print(o)
+        return o
 
+    def update(self, data: SchemaIn) -> Optional[SchemaOut]:
+        data_dict = data.dict()
+        node_id = data_dict.pop("id", None)
+        if node_id is None:
+            raise ValueError("Node ID is required for update")
+        node = self.db.get(Node, node_id)
+        if node is None or node.type != self.node_type:
+            return None
+        for key, value in data_dict.items():
+            setattr(node, key, value)
+        self.db.add(node)
+        self.db.commit()
+        self.db.refresh(node)
+        o = self.schema_out.from_orm(node)
+        if self.source == "cli":
+            print(o)
+        return o
 
-def get_children_of_node(
-    db: Session, node_id: UUID, skip: int = 0, limit: int = 100
-) -> List[Node]:
-    """
-    Retrieve all children of a specific node.
-    """
-    statement = (
-        select(Node)
-        .where(Node.parent_id == node_id)
-        .order_by(Node.order)
-        .offset(skip)
-        .limit(limit)
-    )
-    results = db.exec(statement)
-    return list(results.all())
+    def delete(self, data: SchemaIn) -> bool:
+        data_dict = data.dict()
+        node_id = data_dict.pop("id", None)
+        if node_id is None:
+            raise ValueError("Node ID is required for deletion")
 
-
-def update_node_in_db(
-    db: Session,
-    node_id: UUID,
-    title: Optional[str] = None,
-    meta: Optional[Dict[str, Any]] = None,
-) -> Optional[Node]:
-    """
-    Update an existing node's title and metadata.
-    """
-    node = get_node_by_id(db, node_id)
-    if not node:
-        return None
-
-    if title is not None:
-        node.title = title
-
-    if meta is not None:
-        node.meta = json.dumps(meta)
-
-    node.updated_at = datetime.now(timezone.utc)
-
-    db.add(node)
-    db.commit()
-    db.refresh(node)
-    return node
-
-
-def delete_node_from_db(db: Session, node_id: UUID) -> bool:
-    """
-    Delete a node from the database by its ID.
-    This will cascade delete all child nodes.
-    Returns True if deleted, False otherwise.
-    """
-    node = get_node_by_id(db, node_id)
-    if node:
-        db.delete(node)
-        db.commit()
+        node = self.db.get(Node, node_id)
+        if node is None or node.type != self.node_type:
+            return False
+        self.db.delete(node)
+        self.db.commit()
+        if self.source == "cli":
+            print(f"Node with ID {node_id} deleted")
         return True
-    return False
 
 
-def get_nodes_by_type(
-    db: Session, node_type: NodeType, skip: int = 0, limit: int = 100
-) -> List[Node]:
-    """
-    Retrieve all nodes of a specific type.
-    """
-    statement = (
-        select(Node)
-        .where(Node.type == node_type)
-        .order_by(Node.order)
-        .offset(skip)
-        .limit(limit)
+def make_crud_for(node_type: NodeType, schema_out: Type[BaseModel]):
+    crud = NodeCrud(node_type, schema_out)
+    return AD(
+        {
+            "Create": crud.create,
+            "Read": crud.read,
+            "ReadAll": crud.read_all,
+            "Update": crud.update,
+            "Delete": crud.delete,
+        }
     )
-    results = db.exec(statement)
-    return list(results.all())
-
-
-def get_root_sectors(db: Session, skip: int = 0, limit: int = 100) -> List[Node]:
-    """
-    Retrieve all root-level sectors (nodes with type=sector and no parent).
-    """
-    statement = (
-        select(Node)
-        .where(Node.type == NodeType.sector)
-        .where(Node.parent_id.is_(None))
-        .order_by(Node.order)
-        .offset(skip)
-        .limit(limit)
-    )
-    results = db.exec(statement)
-    return list(results.all())
-
-
-def update_node_order(db: Session, node_id: UUID, new_order: float) -> Optional[Node]:
-    """
-    Update the order of a node.
-    """
-    node = get_node_by_id(db, node_id)
-    if not node:
-        return None
-
-    node.order = new_order
-    node.updated_at = datetime.now(timezone.utc)
-
-    db.add(node)
-    db.commit()
-    db.refresh(node)
-    return node
-
-
-def update_node_parent(
-    db: Session, node_id: UUID, new_parent_id: Optional[UUID]
-) -> Optional[Node]:
-    """
-    Move a node to a new parent.
-    """
-    node = get_node_by_id(db, node_id)
-    if not node:
-        return None
-
-    # Validate new parent if provided
-    if new_parent_id:
-        parent = get_node_by_id(db, new_parent_id)
-        if not parent:
-            raise ValueError(f"Parent node with ID {new_parent_id} not found")
-
-        # Check parent-child relationship logic
-        if parent.type.value >= node.type.value:
-            raise ValueError(
-                f"A {node.type.name} cannot be a child of a {parent.type.name}"
-            )
-
-    node.parent_id = new_parent_id
-    node.updated_at = datetime.now(timezone.utc)
-
-    db.add(node)
-    db.commit()
-    db.refresh(node)
-    return node
-
-
-def get_node_path(db: Session, node_id: UUID) -> List[Node]:
-    """
-    Get the full path from root to the specified node.
-    Returns a list of nodes, starting with the root and ending with the specified node.
-    """
-    path = []
-    current_node = get_node_by_id(db, node_id)
-
-    while current_node:
-        path.insert(0, current_node)
-        if current_node.parent_id:
-            current_node = get_node_by_id(db, current_node.parent_id)
-        else:
-            break
-
-    return path

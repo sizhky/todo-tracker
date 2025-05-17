@@ -7,5 +7,5 @@ __all__ = [
     "TimeEntryUpdate",
 ]
 
-from .node import Node, NodeType, TimeEntry
+from .nodes import Node, NodeType, TimeEntry
 from .time_entry import TimeEntryCreate, TimeEntryRead, TimeEntryUpdate

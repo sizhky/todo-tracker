@@ -1,7 +1,9 @@
+import os
 import pytest
 from sqlmodel import SQLModel, Session, create_engine
 from typing import Generator
 
+os.environ["tdv1"] = "1"  # Set the environment variable to use v1
 # Adjust the import paths based on your project structure
 from td.v1.models import (
     Task,

@@ -4,7 +4,7 @@ from pathlib import Path
 
 # For SQLite, you can use a file-based database or an in-memory database.
 # File-based:
-DB_DIR = Path.home() / ".todo/v1"
+DB_DIR = Path.home() / ".todo/v2/"
 DB_DIR.mkdir(parents=True, exist_ok=True)
 DEFAULT_DB_NAME = "default.db"  # Default database name
 DB_PATH = DB_DIR / DEFAULT_DB_NAME
