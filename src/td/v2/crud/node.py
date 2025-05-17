@@ -2,7 +2,8 @@ from torch_snippets import AD
 from typing import Type, TypeVar, Optional, List
 from pydantic import BaseModel
 from sqlmodel import Session, select
-from ..models.nodes import Node, NodeType
+from uuid import UUID
+from ..models.nodes import Node, NodeType, SCHEMA_OUT_MAPPING, NodeRead
 from ..core.db import engine  # Import the engine to create a session if needed
 
 from rich import print
@@ -15,11 +16,11 @@ class NodeCrud:
     def __init__(
         self,
         node_type: NodeType,
-        schema_out: Type[SchemaOut],
+        schema_out: Type[SchemaOut] = None,
         db: Optional[Session] = None,
     ):
         self.node_type = node_type
-        self.schema_out = schema_out
+        self.schema_out = schema_out if schema_out else SCHEMA_OUT_MAPPING[node_type]
         self.db = db if db is not None else Session(engine)
         self.should_close_db = db is None  # Track if we created the session
 
@@ -36,27 +37,49 @@ class NodeCrud:
     def source(self):
         return getattr(self, "_source", None)
 
-    def create(self, data: SchemaIn) -> SchemaOut:
+    def _create(self, data: SchemaIn) -> SchemaOut:
         data_dict = data.dict()
-        parent_type = data_dict.pop("parent_title", None)
+        parent_type = data_dict.pop("parent_type", None)
         if parent_type:
+            parent_type = parent_type.name
+            parent_node_name = data_dict.pop(f"{parent_type}_name")
             parent_node = self.db.exec(
-                select(Node).where(Node.title == parent_type)
+                select(Node)
+                .where(Node.title == parent_node_name)
+                .where(Node.type == NodeType[parent_type])
             ).first()
             if not parent_node:
-                raise ValueError(f"Parent node with title '{parent_type}' not found")
+                raise ValueError(
+                    f"Parent node with title '{parent_node_name}' not found"
+                )
             data_dict["parent_id"] = parent_node.id
 
         if "type" not in data_dict:
             data_dict["type"] = self.node_type
+        if "," in data_dict["title"]:
+            for title in data_dict["title"].split(","):
+                _data = data.copy()
+                _data.title = title.strip()
+                self.create(_data)
+            return
         node = Node(**data_dict)
         self.db.add(node)
         self.db.commit()
         self.db.refresh(node)
         o = self.schema_out.from_orm(node)
+        return o
+
+    def create(self, data: SchemaIn) -> Optional[SchemaOut]:
+        o = self._create(data)
         if self.source == "cli":
             print(o)
         return o
+
+    def __getitem__(self, input):
+        # if input is like a uuid
+        if isinstance(input, UUID):
+            o = self.read(NodeRead(id=str(input)))
+            return SCHEMA_OUT_MAPPING[o.type](**o.dict())
 
     def read(self, data: SchemaIn) -> Optional[SchemaOut]:
         data_dict = data.dict()
@@ -64,19 +87,49 @@ class NodeCrud:
         if node_id is None:
             raise ValueError("Node ID is required for read")
         node = self.db.get(Node, node_id)
-        if node is None or node.type != self.node_type:
+        if node is None:
             return None
         o = self.schema_out.from_orm(node)
         if self.source == "cli":
             print(o)
         return o
 
-    def read_all(self) -> List[SchemaOut]:
+    def read_or_create(self, data: SchemaIn) -> Optional[SchemaOut]:
+        data_dict = data.dict()
+        title = data_dict.pop("title", None)
+        results = self._search_by_title(title=title)
+        if not results:
+            return self._create(data)
+
+    def _read_all(self):
         nodes = self.db.exec(select(Node).where(Node.type == self.node_type)).all()
         o = [self.schema_out.from_orm(n) for n in nodes]
+        return o
+
+    def read_all(self) -> List[SchemaOut]:
+        o = self._read_all()
         if self.source == "cli":
             print(o)
         return o
+
+    def _search_by_title(self, title: str) -> List[SchemaOut]:
+        """Search for nodes by title (case-insensitive)
+        This will use the composite index on (title, type) for efficient searches.
+        """
+
+        # Using LIKE for case-insensitive search with wildcard
+        statement = select(Node).where(Node.type == self.node_type, Node.title == title)
+        nodes = self.db.exec(statement).all()
+        result = [self.schema_out.from_orm(n) for n in nodes]
+        return result
+
+    def search_by_title(self, data: SchemaIn) -> List[SchemaOut]:
+        data_dict = data.dict()
+        query = data_dict.get("query", "")
+        result = self._search_by_title(query)
+        if self.source == "cli":
+            print(result)
+        return result
 
     def update(self, data: SchemaIn) -> Optional[SchemaOut]:
         data_dict = data.dict()
@@ -121,5 +174,9 @@ def make_crud_for(node_type: NodeType, schema_out: Type[BaseModel]):
             "ReadAll": crud.read_all,
             "Update": crud.update,
             "Delete": crud.delete,
+            "ReadOrCreate": crud.read_or_create,
+            "SearchByTitle": crud.search_by_title,
+            "_read_all": crud._read_all,
+            "crud": crud,
         }
     )

@@ -5,10 +5,11 @@ from typing import Optional, List
 from uuid import uuid4, UUID
 from enum import Enum
 from pydantic import BaseModel, Field as PField
+from sqlalchemy import Index
 
 
 class NodeType(int, Enum):
-    sector = 0
+    sector = 1
     area = 100
     project = 200
     section = 300
@@ -24,7 +25,10 @@ class NodeStatus(int, Enum):
 
 class Node(SQLModel, table=True):
     __tablename__ = "node"
-    __table_args__ = {"extend_existing": True}
+    __table_args__ = (
+        Index("idx_node_title_type", "title", "type"),
+        {"extend_existing": True},
+    )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     title: str
@@ -60,9 +64,8 @@ class BlankModel(BaseModel): ...
 
 
 class NodeCreate(BlankModel):
-    title: str
+    title: str = PField(position=1)
     meta: Optional[str] = "{}"
-    # children: Optional[List["NodeCreate"]] = Field(default_factory=list)
 
 
 class NodeDelete(BlankModel):
@@ -71,6 +74,10 @@ class NodeDelete(BlankModel):
 
 class NodeRead(BaseModel):
     id: UUID
+
+
+class NodeSearch(BlankModel):
+    query: str = PField(position=1)
 
 
 class NodeUpdate(NodeCreate):
@@ -97,9 +104,40 @@ class SectorMixin(BlankModel):
     type: NodeType = PField(default=NodeType.sector, frozen=True)
 
 
-# fmt: off
-class SectorRead(NodeRead, SectorMixin): ...
-class SectorDelete(NodeDelete, SectorMixin): ...
 class SectorCreate(NodeCreate, SectorMixin): ...
+
+
+class SectorRead(NodeRead, SectorMixin): ...
+
+
 class SectorUpdate(NodeUpdate, SectorMixin): ...
+
+
+class SectorDelete(NodeDelete, SectorMixin): ...
+
+
 class SectorOut(NodeOut, SectorMixin): ...
+
+
+class SectorSearch(NodeSearch, SectorMixin): ...
+
+
+class AreaMixin(BlankModel):
+    type: NodeType = PField(default=NodeType.area, frozen=True)
+    parent_type: NodeType = PField(default=NodeType.sector, frozen=True)
+
+
+class AreaCreate(NodeCreate, AreaMixin):
+    sector_name: str = PField(default="_default")
+
+
+class AreaRead(NodeRead, AreaMixin): ...
+
+
+class AreaOut(NodeOut, AreaMixin): ...
+
+
+SCHEMA_OUT_MAPPING = {
+    NodeType.sector: SectorOut,
+    NodeType.area: AreaOut,
+}
