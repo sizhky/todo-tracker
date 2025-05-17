@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 from typing import List
 
-from ...models.v1 import Area, AreaCreate
+from ..models import Area, AreaCreate
 
 __all__ = ["create_area_in_db", "get_all_areas_from_db", "delete_area_from_db"]
 

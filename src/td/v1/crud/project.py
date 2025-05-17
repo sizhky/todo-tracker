@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 from typing import List
 from sqlalchemy.orm import joinedload
 
-from ...models.v1 import Project, ProjectCreate, ProjectRead, ProjectUpdate
+from ..models import Project, ProjectCreate, ProjectRead, ProjectUpdate
 
 __all__ = [
     "create_project_in_db",

@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from datetime import datetime, timezone
 
-from ...models.v1 import TimeEntry, TimeEntryCreate, TimeEntryUpdate
+from ..models import TimeEntry, TimeEntryCreate, TimeEntryUpdate
 
 __all__ = [
     "create_time_entry_in_db",
