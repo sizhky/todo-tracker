@@ -17,7 +17,7 @@ engine = create_engine(
 )
 
 
-def create_v1_db_and_tables():
+def create_db_and_tables():
     """
     Creates the database and all tables defined by SQLModel models.
     This function should be called once at application startup or via a CLI command.

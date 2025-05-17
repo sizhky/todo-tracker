@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from torch_snippets import AD
 
 
-from td.cli import cli
+from td.__pre_init__ import cli
 
 
 api = FastAPI()
