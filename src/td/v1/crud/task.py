@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 # Assuming your models are in ..models.task
 # Adjust the import path if necessary
-from ...models.v1 import Task, TaskCreate, Project, TaskUpdate, TaskRead
+from ..models import Task, TaskCreate, Project, TaskUpdate, TaskRead
 from .time_entry import calculate_total_time_for_task
 
 __all__ = [

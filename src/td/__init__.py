@@ -1,3 +1,3 @@
 __all__ = ["cli"]
 
-from .cli import cli
+from .v1.cli import cli
