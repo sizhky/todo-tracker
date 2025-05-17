@@ -3,13 +3,13 @@ from sqlmodel import SQLModel, Session, create_engine
 from typing import Generator
 
 # Adjust the import paths based on your project structure
-from td.models import (
+from td.models.v1 import (
     Task,
     TaskCreate,
     Project,
     Area,
 )  # Import all models used by metadata
-from td.crud.task import create_task_in_db, get_all_tasks_from_db
+from td.crud import create_task_in_db, get_all_tasks_from_db
 
 
 # Fixture to create a new in-memory SQLite database and session for each test function

@@ -2,7 +2,20 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from datetime import datetime, timezone
 
-from ..models import TimeEntry, TimeEntryCreate, TimeEntryUpdate
+from ...models.v1 import TimeEntry, TimeEntryCreate, TimeEntryUpdate
+
+__all__ = [
+    "create_time_entry_in_db",
+    "get_time_entries_for_task_from_db",
+    "get_time_entry_by_id_from_db",
+    "update_time_entry_in_db",
+    "delete_time_entry_from_db",
+    "get_active_time_entry_for_task_from_db",
+    "get_any_active_time_entry_from_db",
+    "calculate_total_time_for_task",
+    "TimeEntryCreate",
+    "TimeEntryUpdate",
+]
 
 
 def create_time_entry_in_db(db: Session, time_entry: TimeEntryCreate) -> TimeEntry:

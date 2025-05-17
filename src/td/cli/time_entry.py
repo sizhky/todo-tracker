@@ -3,15 +3,16 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from ..core.db import session_scope
-from ..crud.task import get_task_by_id
-from ..crud.time_entry import (
+from ..crud import get_task_by_id
+from ..crud import (
     create_time_entry_in_db,
     get_time_entries_for_task_from_db,
     get_active_time_entry_for_task_from_db,
     update_time_entry_in_db,
     get_any_active_time_entry_from_db,  # Added import
+    TimeEntryCreate,
+    TimeEntryUpdate,
 )
-from ..models import TimeEntryCreate, TimeEntryUpdate
 from .__pre_init__ import cli
 
 

@@ -4,8 +4,16 @@ from sqlalchemy.orm import joinedload
 
 # Assuming your models are in ..models.task
 # Adjust the import path if necessary
-from ..models import Task, TaskCreate, Project, TaskUpdate, TaskRead
-from ..crud.time_entry import calculate_total_time_for_task
+from ...models.v1 import Task, TaskCreate, Project, TaskUpdate, TaskRead
+from .time_entry import calculate_total_time_for_task
+
+__all__ = [
+    "create_task_in_db",
+    "get_all_tasks_from_db",
+    "delete_task_from_db",
+    "update_task_in_db",
+    "get_task_by_id",
+]
 
 
 def create_task_in_db(db: Session, task: TaskCreate) -> Task:

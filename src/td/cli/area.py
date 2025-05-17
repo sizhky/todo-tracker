@@ -4,7 +4,7 @@ from starlette import status
 from typing_extensions import Annotated
 from typer import Argument
 
-from ..crud.area import create_area_in_db, get_all_areas_from_db, delete_area_from_db
+from ..crud import create_area_in_db, get_all_areas_from_db, delete_area_from_db
 from ..core.db import session_scope
 
 from .__pre_init__ import cli

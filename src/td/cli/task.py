@@ -5,14 +5,14 @@ from typer import Option
 from torch_snippets import write_json
 
 from ..core.db import session_scope
-from ..crud.task import (
+from ..crud import (
     create_task_in_db,
     get_all_tasks_from_db,
     delete_task_from_db,
     update_task_in_db,
     get_task_by_id,
 )
-from ..crud.time_entry import (
+from ..crud import (
     TimeEntryCreate,
     TimeEntryUpdate,
     create_time_entry_in_db,

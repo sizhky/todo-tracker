@@ -5,7 +5,7 @@ from starlette.responses import Response
 from starlette import status
 
 from ..core.db import session_scope
-from ..crud.project import (
+from ..crud import (
     create_project_in_db,
     get_all_projects_from_db,
     delete_project_from_db,
