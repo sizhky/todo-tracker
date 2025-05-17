@@ -220,7 +220,6 @@ def list_tasks(
                 tasks = tasks.reset_index()
                 return tasks.to_dict(orient="records")
             elif as_string:
-                tasks = tasks.reset_index()
                 return tasks
             print(tasks)
             return
