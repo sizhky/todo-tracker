@@ -13,6 +13,7 @@ from .sector import _list_sectors, sector_crud, SectorCreate
 from .area import _list_areas, area_crud, AreaCreate
 from .project import _list_projects, project_crud, ProjectCreate
 from .section import _list_sections, section_crud, SectionCreate
+from .display import fetch_all_paths
 
 from .__pre_init__ import register_cli_command
 
@@ -45,12 +46,14 @@ register_cli_command(
         "project_name": _list_projects,
         "area_name": _list_areas,
         "sector_name": _list_sectors,
+        "path": fetch_all_paths,
     },
     shorthands={
         "section_name": "-S",
         "project_name": "-p",
         "area_name": "-a",
         "sector_name": "-s",
+        "path": "-P",
     },
 )
 register_cli_command("tl", "list_tasks", task_crud.ReadAll, BlankModel)

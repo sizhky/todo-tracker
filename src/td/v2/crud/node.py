@@ -13,6 +13,7 @@ from ..models.nodes import (
     ProjectCreate,
     SectionCreate,
     NodeCreate,
+    TaskCreate,
 )
 from ..core.db import engine  # Import the engine to create a session if needed
 
@@ -48,40 +49,61 @@ class NodeCrud:
         return getattr(self, "_source", None)
 
     def create_hierarchy(self, data: SchemaIn) -> Optional[SchemaOut]:
-        title = data.title if isinstance(data, SectorCreate) else data.sector_name
-        sector = self.get_or_create(SectorCreate(title=title))
-        if not getattr(data, "area_name", None) and not isinstance(data, AreaCreate):
-            return SCHEMA_OUT_MAPPING[sector.type](**sector.dict())
-        title = data.title if isinstance(data, AreaCreate) else data.area_name
-        area = self.get_or_create(
-            AreaCreate(title=title, parent_id=sector.id, parent_type=NodeType.sector)
-        )
-        if not getattr(data, "project_name", None) and not isinstance(
-            data, ProjectCreate
-        ):
-            return SCHEMA_OUT_MAPPING[area.type](**area.dict())
-        title = data.title if isinstance(data, ProjectCreate) else data.project_name
-        project = self.get_or_create(
-            ProjectCreate(title=title, parent_id=area.id, parent_type=NodeType.area)
-        )
-        if not getattr(data, "section_name", None) and not isinstance(
-            data, SectionCreate
-        ):
-            return SCHEMA_OUT_MAPPING[project.type](**project.dict())
-        title = data.title if isinstance(data, SectionCreate) else data.section_name
-        section = self.get_or_create(
-            SectionCreate(
-                title=title, parent_id=project.id, parent_type=NodeType.project
+        if data.path is not None:
+            # If path is provided, split it and create nodes for each part
+            path = data.path.strip("/").split("/")
+            try:
+                data.sector_name = path[0]
+                data.area_name = path[1] if len(path) > 1 else "_"
+                data.project_name = path[2] if len(path) > 2 else "_"
+                data.section_name = path[3] if len(path) > 3 else "_"
+                data.task_name = path[4] if len(path) > 4 else "_"
+            except Exception as _:
+                pass
+        if "," in data.title:
+            # If title contains a comma, split it and create nodes for each part
+            for title in data.title.split(","):
+                _data = data.copy()
+                _data.title = title.strip()
+                self.create_hierarchy(_data)
+            return
+        HIERARCHY = [
+            (SectorCreate, "sector_name"),
+            (AreaCreate, "area_name"),
+            (ProjectCreate, "project_name"),
+            (SectionCreate, "section_name"),
+            (TaskCreate, "task_name"),
+        ]
+
+        parent_id = None
+        node = None
+
+        for schema_cls, attr in HIERARCHY:
+            # Skip levels not present in input
+            if not hasattr(data, attr) and not isinstance(data, schema_cls):
+                break
+
+            title = (
+                data.title
+                if isinstance(data, schema_cls)
+                else getattr(data, attr, None)
             )
-        )
-        return SCHEMA_OUT_MAPPING[section.type](**section.dict())
+            if not title:
+                break
+
+            payload = schema_cls(title=title, parent_id=parent_id)
+            node = self.get_or_create(payload)
+            parent_id = node.id
+
+        return SCHEMA_OUT_MAPPING[node.type](**node.dict()) if node else None
 
     def _create(self, data: SchemaIn) -> SchemaOut:
         data_dict = data.dict()
         parent_type = data_dict.pop("parent_type", None)
         if parent_type:
             parent_type = parent_type.name
-            if "parent_id" in data_dict:
+            parent_node = None
+            if "parent_id" in data_dict and data_dict["parent_id"]:
                 parent_id = data_dict.pop("parent_id")
                 parent_node = self.db.exec(
                     select(Node)
@@ -90,7 +112,7 @@ class NodeCrud:
                 ).first()
                 if not parent_node:
                     raise ValueError(f"Parent node with ID {parent_id} not found")
-            elif "parent_name" in data_dict:
+            elif f"{parent_type}_name" in data_dict:
                 parent_node_name = data_dict.pop(f"{parent_type}_name")
                 parent_node = self.db.exec(
                     select(Node)
@@ -105,7 +127,9 @@ class NodeCrud:
                             parent_id=None,
                         )
                     )
-            data_dict["parent_id"] = parent_node.id
+
+            if parent_node:
+                data_dict["parent_id"] = parent_node.id
 
         if "type" not in data_dict:
             data_dict["type"] = self.node_type
@@ -149,6 +173,9 @@ class NodeCrud:
         if recursive:
             for child in children:
                 child.children = self.get_children(child.id, recursive=True)
+        if in_debug_mode():
+            line()
+            print(f"get_children\nInput: {data}\n\nResults: {children}")
         return [self.schema_out.from_orm(child) for child in children]
 
     def _read(self, data: SchemaIn) -> Optional[SchemaOut]:
@@ -253,7 +280,7 @@ def make_crud_for(node_type: NodeType, schema_out: Type[BaseModel]):
     crud = NodeCrud(node_type, schema_out)
     return AD(
         {
-            "Create": crud.create,
+            "Create": crud.create_hierarchy,
             "Read": crud.read,
             "ReadAll": crud.read_all,
             "Update": crud.update,

@@ -9,7 +9,9 @@ from ..models.nodes import (
     ProjectDelete,
     ProjectSearch,
 )
+from .sector import _list_sectors
 from .area import _list_areas
+from .display import fetch_all_paths
 
 from .__pre_init__ import register_cli_command
 
@@ -20,8 +22,12 @@ register_cli_command(
     "create_project",
     project_crud.Create,
     ProjectCreate,
-    autocompletions={"area_name": _list_areas},
-    shorthands={"area_name": "-a"},
+    autocompletions={
+        "area_name": _list_areas,
+        "sector_name": _list_sectors,
+        "path": fetch_all_paths,
+    },
+    shorthands={"area_name": "-a", "sector_name": "-s", "path": "-P"},
 )
 register_cli_command("pl", "list_projects", project_crud.ReadAll, BlankModel)
 register_cli_command("pd", "delete_project", project_crud.Delete, ProjectDelete)

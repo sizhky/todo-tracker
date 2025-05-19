@@ -10,6 +10,9 @@ from ..models.nodes import (
     SectionSearch,
 )
 from .sector import _list_sectors
+from .area import _list_areas
+from .project import _list_projects
+from .display import fetch_all_paths
 
 from .__pre_init__ import register_cli_command
 
@@ -20,8 +23,18 @@ register_cli_command(
     "create_section",
     section_crud.Create,
     SectionCreate,
-    autocompletions={"sector_name": _list_sectors},
-    shorthands={"sector_name": "-s"},
+    autocompletions={
+        "sector_name": _list_sectors,
+        "area_name": _list_areas,
+        "project_name": _list_projects,
+        "path": fetch_all_paths,
+    },
+    shorthands={
+        "sector_name": "-s",
+        "area_name": "-a",
+        "project_name": "-p",
+        "path": "-P",
+    },
 )
 register_cli_command("Sl", "list_sections", section_crud.ReadAll, BlankModel)
 register_cli_command("Sd", "delete_section", section_crud.Delete, SectionDelete)

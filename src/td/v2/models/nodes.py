@@ -68,6 +68,7 @@ class NodeCreate(BlankModel):
     meta: Optional[str] = "{}"
     parent_id: Optional[UUID] = None
     type: Optional[NodeType] = None
+    path: Optional[str] = None
 
 
 class NodeDelete(BlankModel):
