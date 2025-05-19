@@ -8,7 +8,7 @@ from td.__pre_init__ import cli
 commands = cli.registered_commands
 for command in commands:
     func = command.callback
-    func.from_mcp = True
+    func._source = "mcp"
     mcp.tool()(func)
 
 

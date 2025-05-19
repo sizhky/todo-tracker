@@ -28,4 +28,4 @@ def _list_sectors():
     return [s.title for s in o]
 
 
-sector_crud.crud.read_or_create(SectorCreate(title="_default"))
+sector_crud.crud.get_or_create(SectorCreate(title="_"))

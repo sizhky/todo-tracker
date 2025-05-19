@@ -26,6 +26,8 @@ def register_cli_command(
 ):
     def command_wrapper(**kwargs):
         instance = schema(**kwargs)
+        if hasattr(command_wrapper, "_source"):
+            func.__self__._source = command_wrapper._source
         if type(instance) is BlankModel:
             result = func()
         else:
@@ -97,6 +99,7 @@ def register_cli_command(
     command_wrapper.__name__ = long_name
     command_wrapper.__doc__ = func.__doc__
     func.__self__._source = "cli"
+    command_wrapper._source = "cli"
 
     cli.command(name=cli_name)(command_wrapper)
     return command_wrapper

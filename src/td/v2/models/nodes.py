@@ -66,6 +66,8 @@ class BlankModel(BaseModel): ...
 class NodeCreate(BlankModel):
     title: str = PField(position=1)
     meta: Optional[str] = "{}"
+    parent_id: Optional[UUID] = None
+    type: Optional[NodeType] = None
 
 
 class NodeDelete(BlankModel):
@@ -88,7 +90,7 @@ class NodeUpdate(NodeCreate):
 
 class NodeOut(NodeRead):
     title: str
-    type: NodeType
+    type: Optional[NodeType]
     status: NodeStatus
     parent_id: Optional[UUID]
     order: Optional[float]
@@ -98,28 +100,29 @@ class NodeOut(NodeRead):
 
     class Config:
         from_attributes = True
+        use_enum_values = False
 
 
 class SectorMixin(BlankModel):
     type: NodeType = PField(default=NodeType.sector, frozen=True)
 
 
-class SectorCreate(NodeCreate, SectorMixin): ...
+class SectorCreate(SectorMixin, NodeCreate): ...
 
 
-class SectorRead(NodeRead, SectorMixin): ...
+class SectorRead(SectorMixin, NodeRead): ...
 
 
-class SectorUpdate(NodeUpdate, SectorMixin): ...
+class SectorUpdate(SectorMixin, NodeUpdate): ...
 
 
-class SectorDelete(NodeDelete, SectorMixin): ...
+class SectorDelete(SectorMixin, NodeDelete): ...
 
 
-class SectorOut(NodeOut, SectorMixin): ...
+class SectorOut(SectorMixin, NodeOut): ...
 
 
-class SectorSearch(NodeSearch, SectorMixin): ...
+class SectorSearch(SectorMixin, NodeSearch): ...
 
 
 class AreaMixin(BlankModel):
@@ -127,17 +130,111 @@ class AreaMixin(BlankModel):
     parent_type: NodeType = PField(default=NodeType.sector, frozen=True)
 
 
-class AreaCreate(NodeCreate, AreaMixin):
-    sector_name: str = PField(default="_default")
+class AreaCreate(AreaMixin, NodeCreate):
+    sector_name: str = PField(default="_")
 
 
-class AreaRead(NodeRead, AreaMixin): ...
+class AreaRead(AreaMixin, NodeRead): ...
 
 
-class AreaOut(NodeOut, AreaMixin): ...
+class AreaUpdate(AreaMixin, NodeUpdate): ...
+
+
+class AreaDelete(AreaMixin, NodeDelete): ...
+
+
+class AreaSearch(AreaMixin, NodeSearch):
+    sector_name: str = PField(default="_")
+
+
+class AreaOut(AreaMixin, NodeOut): ...
+
+
+class ProjectMixin(BlankModel):
+    type: NodeType = PField(default=NodeType.project, frozen=True)
+    parent_type: NodeType = PField(default=NodeType.area, frozen=True)
+
+
+class ProjectCreate(ProjectMixin, NodeCreate):
+    area_name: str = PField(default="_")
+    sector_name: str = PField(default="_")
+
+
+class ProjectRead(ProjectMixin, NodeRead): ...
+
+
+class ProjectUpdate(ProjectMixin, NodeUpdate): ...
+
+
+class ProjectDelete(ProjectMixin, NodeDelete): ...
+
+
+class ProjectSearch(ProjectMixin, NodeSearch):
+    area_name: str = PField(default="_")
+
+
+class ProjectOut(ProjectMixin, NodeOut): ...
+
+
+class SectionMixin(BlankModel):
+    type: NodeType = PField(default=NodeType.section, frozen=True)
+    parent_type: NodeType = PField(default=NodeType.project, frozen=True)
+
+
+class SectionCreate(SectionMixin, NodeCreate):
+    project_name: str = PField(default="_")
+    area_name: str = PField(default="_")
+    sector_name: str = PField(default="_")
+
+
+class SectionRead(SectionMixin, NodeRead): ...
+
+
+class SectionUpdate(SectionMixin, NodeUpdate): ...
+
+
+class SectionDelete(SectionMixin, NodeDelete): ...
+
+
+class SectionSearch(SectionMixin, NodeSearch):
+    area_name: str = PField(default="_")
+
+
+class SectionOut(SectionMixin, NodeOut): ...
+
+
+class TaskMixin(BlankModel):
+    type: NodeType = PField(default=NodeType.task, frozen=True)
+    parent_type: NodeType = PField(default=NodeType.section, frozen=True)
+
+
+class TaskCreate(TaskMixin, NodeCreate):
+    section_name: str = PField(default="_")
+    project_name: str = PField(default="_")
+    area_name: str = PField(default="_")
+    sector_name: str = PField(default="_")
+
+
+class TaskRead(TaskMixin, NodeRead): ...
+
+
+class TaskUpdate(TaskMixin, NodeUpdate): ...
+
+
+class TaskDelete(TaskMixin, NodeDelete): ...
+
+
+class TaskSearch(TaskMixin, NodeSearch):
+    section_name: str = PField(default="_")
+
+
+class TaskOut(TaskMixin, NodeOut): ...
 
 
 SCHEMA_OUT_MAPPING = {
     NodeType.sector: SectorOut,
     NodeType.area: AreaOut,
+    NodeType.project: ProjectOut,
+    NodeType.section: SectionOut,
+    NodeType.task: TaskOut,
 }
