@@ -220,7 +220,7 @@ class NodeCrud:
         return o
 
     def _search_by_title(
-        self, title: str, type: NodeType, parent_id: Optional[UUID]
+        self, title: str, type: NodeType = None, parent_id: Optional[UUID] = None
     ) -> List[SchemaOut]:
         """Search for nodes by title (case-insensitive)
         This will use the composite index on (title, type) for efficient searches.
@@ -237,7 +237,8 @@ class NodeCrud:
     def search_by_title(self, data: SchemaIn) -> List[SchemaOut]:
         data_dict = data.dict()
         query = data_dict.get("query", "")
-        result = self._search_by_title(query)
+        node_type = data_dict.get("type", None)
+        result = self._search_by_title(query, type=node_type)
         if self.source == "cli":
             print(result)
         return result

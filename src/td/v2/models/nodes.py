@@ -72,21 +72,25 @@ class NodeCreate(BlankModel):
 
 
 class NodeDelete(BlankModel):
-    id: UUID
+    id: Optional[UUID] = None
+    path: Optional[str] = None
 
 
 class NodeRead(BaseModel):
-    id: UUID
+    id: Optional[UUID] = None
+    path: Optional[str] = None
 
 
 class NodeSearch(BlankModel):
     query: str = PField(position=1)
+    path: Optional[str] = None
 
 
 class NodeUpdate(NodeCreate):
-    id: UUID
+    id: Optional[UUID] = None
     title: Optional[str] = None
     meta: Optional[str] = None
+    path: Optional[str] = None
 
 
 class NodeOut(NodeRead):
@@ -225,8 +229,7 @@ class TaskUpdate(TaskMixin, NodeUpdate): ...
 class TaskDelete(TaskMixin, NodeDelete): ...
 
 
-class TaskSearch(TaskMixin, NodeSearch):
-    section_name: str = PField(default="_")
+class TaskSearch(TaskMixin, NodeSearch): ...
 
 
 class TaskOut(TaskMixin, NodeOut): ...
