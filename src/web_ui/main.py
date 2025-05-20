@@ -5,6 +5,7 @@ from td.v2.cli.display import fetch
 from td.v2.cli.sector import _list_sectors
 from subprocess import run
 import qrcode
+import requests
 
 zeromd_headers = [
     Script(type="module", src="https://cdn.jsdelivr.net/npm/zero-md@3?register")
@@ -40,23 +41,32 @@ async def get(fname: str, ext: str):
 @rt("/")
 def get():
     return Titled(
-        Div(A("Hello", href="/mobile"), style="text-align: center;"),
-        *[render_sector(sector) for sector in _list_sectors()],
+        "Tracker",
+        Div(
+            *[render_sector(sector) for sector in _list_sectors()],
+            style="text-align: left;",
+        ),
+        Div(*[Br()] * 3, H4(A("🐍", href="/mobile"))),
+        style="text-align: center;",
     )
 
 
 @rt("/mobile")
 def get():
-    ip = run(
-        "ifconfig | grep 192", shell=True, capture_output=True, text=True
-    ).stdout.split()[1]
-    ip = f"http://{ip}:1234"
+    # Get the public ngrok URL (assumes ngrok is running and API is accessible)
+    try:
+        resp = requests.get("http://localhost:4040/api/tunnels")
+        tunnels = resp.json().get("tunnels", [])
+        public_url = tunnels[0]["public_url"] if tunnels else None
+        ip = public_url if public_url else "Ngrok not running"
+    except Exception as e:
+        ip = f"Ngrok not running: {e}"
     img = qrcode.make(ip)
     makedir(static_path)
     img.save(f"{static_path}/ip.png")
     return Titled(
-        "Scan QR",
-        Div(Img(src="ip.png"), Div(ip), style="text-align: center;"),
+        Div(A("Task Tracker", href="/"), style="text-align: center;"),
+        Div(Img(src="ip.png"), Div(A(ip)), style="text-align: center;"),
     )
 
 
