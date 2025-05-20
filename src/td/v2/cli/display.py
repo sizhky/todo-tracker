@@ -39,7 +39,9 @@ def fetch_all_paths():
     o = _fetch()
     o = o.flatten_and_make_dataframe()
     o = o.apply(
-        lambda x: "/".join(x.dropna().astype(str).map(lambda x: x.split(" + ")[0])),
+        lambda x: "/".join(
+            x.dropna().astype(str).map(lambda x: x.split(" + ")[0])[:-1]
+        ),
         axis=1,
     )
     return o
