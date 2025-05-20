@@ -10,6 +10,7 @@ from ..models.nodes import BlankModel
 from ..core.db import create_db_and_tables
 
 cli = Typer()
+_cli = Typer()
 create_db_and_tables()
 
 if len(sys.argv) == 1:

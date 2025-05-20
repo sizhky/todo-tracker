@@ -1,7 +1,9 @@
+import curses
+from typing_extensions import Annotated
 from torch_snippets import AD
-
-from .__pre_init__ import cli
-from .sector import sector_crud
+from typer import Argument
+from .__pre_init__ import _cli
+from .sector import sector_crud, _list_sectors
 
 from ..models.nodes import NodeRead
 
@@ -35,7 +37,7 @@ def _fetch(id=None, sector=None):
     return o
 
 
-def fetch_all_paths():
+def fetch_all_paths(incomplete: str):
     o = _fetch()
     o = o.flatten_and_make_dataframe()
     o = o.apply(
@@ -43,7 +45,10 @@ def fetch_all_paths():
             x.dropna().astype(str).map(lambda x: x.split(" + ")[0])[:-1]
         ),
         axis=1,
-    )
+    ).tolist()
+    if incomplete:
+        o = [_o for _o in o if incomplete in _o]
+
     return o
 
 
@@ -53,15 +58,29 @@ def fetch(id=None, sector=None, as_dataframe=True):
         o = o.flatten_and_make_dataframe()
         o.fillna("_", inplace=True)
         o = o.map(lambda x: x.split(" + ")[0])
-        o.columns = ["SECTOR", "AREA", "PROJECT", "SECTION", "TASK", "_"]
-        o.set_index(["SECTOR", "AREA", "PROJECT", "SECTION"], inplace=True)
+        o.columns = ["SECTOR", "AREA", "PROJECT", "SECTION", "TASK", "_"][
+            : len(o.columns)
+        ]
+        o.set_index(
+            ["SECTOR", "AREA", "PROJECT", "SECTION"][: len(o.columns) - 1], inplace=True
+        )
         if sector is not None:
             o = o.loc[sector]
         return o
     return o
 
 
-@cli.command("tw")
-def watch_tasks(sector=None):
-    print(fetch(sector=sector))
-    return
+@_cli.command("x")
+def watch_tasks(
+    sector: Annotated[str | None, Argument(autocompletion=_list_sectors)],
+):
+    def live_display(stdscr):
+        stdscr.clear()
+        data = fetch(sector=sector)
+        lines = data.to_string().splitlines()
+        for i, line in enumerate(lines):
+            stdscr.addstr(i, 0, line)
+        stdscr.refresh()
+        stdscr.getch()
+
+    curses.wrapper(live_display)

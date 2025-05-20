@@ -1,6 +1,6 @@
-__all__ = ["cli"]
+__all__ = ["cli", "_cli"]
 
-from .__pre_init__ import cli
+from .__pre_init__ import cli, _cli
 from .db import *
 from .sector import *
 from .area import *

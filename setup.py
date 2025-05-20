@@ -13,9 +13,7 @@ setup(
     package_dir={"": "src"},
     install_requires=["typer", "torch-snippets", "pandas", "pydantic"],
     entry_points={
-        "console_scripts": [
-            "td=td:cli",
-        ],
+        "console_scripts": ["td=td:cli", "tdx=td:_cli"],
     },
     python_requires=">=3.8",
     author="Yeshwanth",
