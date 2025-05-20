@@ -8,6 +8,17 @@ from .sector import sector_crud, _list_sectors
 from ..models.nodes import NodeRead
 
 
+def trucate_meta(meta):
+    """
+    Truncate the meta string to a maximum of 20 characters.
+    """
+    if meta in [None, "{}"]:
+        return None
+    if len(meta) > 20:
+        return meta[:20] + "..."
+    return meta
+
+
 def _fetch(id=None, sector=None):
     """
     Test command to check if the CLI is working.
@@ -24,7 +35,7 @@ def _fetch(id=None, sector=None):
         children = sector_crud.crud.get_children(NodeRead(id=node_id))
         children = sorted(children, key=lambda x: 0 if x.title == "_" else 1)
         if not children:
-            return title, node.meta if node.meta != "{}" else None
+            return title, trucate_meta(node.meta)
         subtree = AD()
         for child in children:
             child_title, child_tree = build_tree(child.id)
@@ -48,7 +59,6 @@ def fetch_all_paths(incomplete: str):
     ).tolist()
     if incomplete:
         o = [_o for _o in o if incomplete in _o]
-
     return o
 
 
@@ -74,13 +84,32 @@ def fetch(id=None, sector=None, as_dataframe=True):
 def watch_tasks(
     sector: Annotated[str | None, Argument(autocompletion=_list_sectors)],
 ):
+    import time
+
     def live_display(stdscr):
-        stdscr.clear()
-        data = fetch(sector=sector)
-        lines = data.to_string().splitlines()
-        for i, line in enumerate(lines):
-            stdscr.addstr(i, 0, line)
-        stdscr.refresh()
-        stdscr.getch()
+        curses.curs_set(0)  # Hide the cursor
+        curses.use_default_colors()
+        stdscr.nodelay(True)  # Make getch non-blocking
+
+        while True:
+            stdscr.clear()
+            data = fetch(sector=sector)
+            lines = data.to_string().splitlines()
+            line_size = max(len(line) for line in lines)
+            stdscr.addstr(1, 5, f"{sector.capitalize()} - {len(data)} tasks")
+            for i, line in enumerate(lines, start=2):
+                if i == 4:
+                    stdscr.addstr(i, 5, "-" * line_size)
+                if i >= 4:
+                    i += 1
+                stdscr.addstr(i, 5, line)
+            stdscr.refresh()
+
+            # Wait up to 0.1s for a key press; exit if 'q' is pressed
+            for _ in range(50):  # 50 x 0.1s = 5s total
+                key = stdscr.getch()
+                if key in [ord("q"), ord("x")]:
+                    return
+                time.sleep(0.1)
 
     curses.wrapper(live_display)

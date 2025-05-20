@@ -14,7 +14,7 @@ _cli = Typer()
 create_db_and_tables()
 
 if len(sys.argv) == 1:
-    sys.argv.append("tw")
+    sys.argv.append("personal")
 
 
 def register_cli_command(

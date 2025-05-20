@@ -41,7 +41,7 @@ async def get(fname: str, ext: str):
 @rt("/")
 def get():
     return Titled(
-        "Tracker",
+        "Task Tracker",
         Div(
             *[render_sector(sector) for sector in _list_sectors()],
             style="text-align: left;",
