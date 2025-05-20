@@ -10,7 +10,7 @@ DEFAULT_DB_NAME = "default.db"  # Default database name
 DB_PATH = DB_DIR / DEFAULT_DB_NAME
 DB_PATH.touch(exist_ok=True)  # Create the database file if it doesn't exist
 # Symlink name for the active database
-ACTIVE_DB_LINK_FILENAME = os.environ.get("TDDB", "active.db").rstrip(
+ACTIVE_DB_LINK_FILENAME = os.environ.get("TDDB", "active.db").removesuffix(
     ".db"
 )  # Symlink name for the active database
 ACTIVE_DB_LINK_FILENAME = (
