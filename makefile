@@ -6,6 +6,9 @@ ui:
 dummy-ui:
 	python -m src.learning_textual
 
+html:
+	python src/web_ui/main.py
+
 mcp:
 	mcp dev src/td/mcp.py
 
