@@ -1,3 +1,4 @@
+from datetime import datetime
 from torch_snippets import AD, in_debug_mode, line
 from typing import Type, TypeVar, Optional, List
 from pydantic import BaseModel
@@ -27,7 +28,7 @@ class NodeCrud:
     def __init__(
         self,
         node_type: NodeType,
-        schema_out: Type[SchemaOut] = None,
+        schema_out: Type[SchemaOut],
         db: Optional[Session] = None,
     ):
         self.node_type = node_type
@@ -96,6 +97,39 @@ class NodeCrud:
             parent_id = node.id
 
         return SCHEMA_OUT_MAPPING[node.type](**node.dict()) if node else None
+
+    def _fetch_from_hierarchy(self, path):
+        # Fetch the hierarchy from the database
+        path = path.strip("/").split("/")
+        HIERARCHY = []
+        try:
+            sector_name = path[0]
+            HIERARCHY.append((NodeType.sector, sector_name))
+            area_name = path[1]
+            HIERARCHY.append((NodeType.area, area_name))
+            project_name = path[2]
+            HIERARCHY.append((NodeType.project, project_name))
+            section_name = path[3]
+            HIERARCHY.append((NodeType.section, section_name))
+            task_name = path[4]
+            HIERARCHY.append((NodeType.task, task_name))
+        except Exception as _:
+            pass
+        parent_id = None
+        node = None
+        for node_type, title in HIERARCHY:
+            if not title:
+                break
+            node = self.db.exec(
+                select(Node)
+                .where(Node.type == node_type)
+                .where(Node.title == title)
+                .where(Node.parent_id == parent_id)
+            ).first()
+            if not node:
+                break
+            parent_id = node.id
+        return node
 
     def _create(self, data: SchemaIn) -> SchemaOut:
         data_dict = data.dict()
@@ -245,14 +279,20 @@ class NodeCrud:
 
     def update(self, data: SchemaIn) -> Optional[SchemaOut]:
         data_dict = data.dict()
-        node_id = data_dict.pop("id", None)
-        if node_id is None:
-            raise ValueError("Node ID is required for update")
-        node = self.db.get(Node, node_id)
+        if data_dict.get("path"):
+            node = self._fetch_from_hierarchy(data_dict["path"])
+        else:
+            node_id = data_dict.pop("id", None)
+            if node_id is None:
+                raise ValueError("Node ID is required for update")
+            node = self.db.get(Node, node_id)
         if node is None or node.type != self.node_type:
             return None
         for key, value in data_dict.items():
+            if not hasattr(node, key) or value is None:
+                continue
             setattr(node, key, value)
+        node.updated_at = datetime.now()
         self.db.add(node)
         self.db.commit()
         self.db.refresh(node)
@@ -275,6 +315,17 @@ class NodeCrud:
         if self.source == "cli":
             print(f"Node with ID {node_id} deleted")
         return True
+
+    def toggle_critical(self, data: SchemaIn) -> Optional[SchemaOut]:
+        if data.title.startswith("*"):
+            data.title = data.title[1:-1]
+        else:
+            data.title = f"*{data.title}*"
+        self.update(data)
+
+    def toggle_complete(self, data: SchemaIn) -> Optional[SchemaOut]:
+        data.status = 10 if data.status == 0 else 0
+        self.update(data)
 
 
 def make_crud_for(node_type: NodeType, schema_out: Type[BaseModel]):

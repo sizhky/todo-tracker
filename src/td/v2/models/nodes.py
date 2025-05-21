@@ -79,6 +79,7 @@ class NodeDelete(BlankModel):
 class NodeRead(BaseModel):
     id: Optional[UUID] = None
     path: Optional[str] = None
+    status: Optional[NodeStatus] = None
 
 
 class NodeSearch(BlankModel):
@@ -91,6 +92,7 @@ class NodeUpdate(NodeCreate):
     title: Optional[str] = None
     meta: Optional[str] = None
     path: Optional[str] = None
+    status: Optional[NodeStatus] = None
 
 
 class NodeOut(NodeRead):

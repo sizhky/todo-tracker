@@ -9,6 +9,14 @@ from .section import *
 from .task import *
 from .display import *
 
+CRUDS = {
+    NodeType.sector: sector_crud,
+    NodeType.area: area_crud,
+    NodeType.project: project_crud,
+    NodeType.section: section_crud,
+    NodeType.task: task_crud,
+}
+
 
 @cli.command(name="onboard")
 def onboard():

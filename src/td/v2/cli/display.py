@@ -5,10 +5,10 @@ from typer import Argument
 from .__pre_init__ import _cli
 from .sector import sector_crud, _list_sectors
 
-from ..models.nodes import NodeRead
+from ..models.nodes import NodeRead, NodeType, NodeStatus, SCHEMA_OUT_MAPPING
 
 
-def trucate_meta(meta):
+def truncate_meta(meta):
     """
     Truncate the meta string to a maximum of 20 characters.
     """
@@ -31,26 +31,28 @@ def _fetch(id=None, sector=None):
 
     def build_tree(node_id):
         node = sector_crud.crud._read(NodeRead(id=node_id))
-        title = f"{node.title} + {str(node.id)[:8]}"
-        title = node.title
+        node = SCHEMA_OUT_MAPPING[node.type](**node.model_dump())
         children = sector_crud.crud.get_children(NodeRead(id=node_id))
         children = sorted(children, key=lambda x: 0 if x.title == "_" else 1)
         if not children:
-            return title, trucate_meta(node.meta)
+            return node, node
         subtree = AD()
+        subtree["__node"] = node
         for child in children:
-            child_title, child_tree = build_tree(child.id)
-            subtree[child_title] = child_tree
-        return title, subtree
+            child_node, child_tree = build_tree(child.id)
+            subtree[child_node.title] = child_tree
+        return node, subtree
 
     for node_id in ids:
-        title, tree = build_tree(node_id)
-        o[title] = tree
+        node, tree = build_tree(node_id)
+        o[node.title] = tree
+        o["__node"] = node
     return o
 
 
 def fetch_all_paths(incomplete: str):
     o = _fetch()
+    o.drop("__node")
     o = o.flatten_and_make_dataframe()
     o = o.apply(
         lambda x: "/".join(
@@ -66,6 +68,8 @@ def fetch_all_paths(incomplete: str):
 def fetch(id=None, sector=None, as_dataframe=True):
     o = _fetch(id=id, sector=sector)
     if as_dataframe:
+        o.drop("__node")
+        o = o.map(lambda x: truncate_meta(x.meta) if hasattr(x, "meta") else x)
         o = o.flatten_and_make_dataframe()
         o.fillna("_", inplace=True)
         o = o.map(lambda x: x.split(" + ")[0])
