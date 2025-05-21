@@ -86,6 +86,10 @@ def watch_tasks(
 ):
     import time
 
+    if sector == "x":
+        print(fetch(sector="personal"))
+        return
+
     def live_display(stdscr):
         curses.curs_set(0)  # Hide the cursor
         curses.use_default_colors()
