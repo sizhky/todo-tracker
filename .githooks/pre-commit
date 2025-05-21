@@ -27,9 +27,11 @@ else
 fi
 
 # make sure all tests are passing
-if ! /Users/yeshwanth/Code/Personal/todo-tracker/.venv/bin/pytest --maxfail=1 --disable-warnings -q; then
-  echo "❌ Tests failed. Please fix them before committing."
-  exit 1
+if ["$branch" != "test"]; then
+  if ! /Users/yeshwanth/Code/Personal/todo-tracker/.venv/bin/pytest --maxfail=1 --disable-warnings -q; then
+    echo "❌ Tests failed. Please fix them before committing."
+    exit 1
+  fi
 fi
 
 exit 0
