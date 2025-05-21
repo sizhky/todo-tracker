@@ -1,7 +1,7 @@
 .PHONY: tests
 
 textual-ui:
-	python -m src.textual_ui
+	ptw --runner "python -m src.textual_ui.v2.app"
 	
 dummy-ui:
 	python -m src.learning_textual

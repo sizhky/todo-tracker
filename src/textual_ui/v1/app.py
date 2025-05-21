@@ -16,7 +16,6 @@ class TodoApp(App):
         Binding("r", "refresh", "Refresh", show=True),
     ]
 
-    CSS_PATH = "styles/app.tcss"
     TITLE = "Todo Tracker"
 
     def compose(self) -> ComposeResult:

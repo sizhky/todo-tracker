@@ -32,6 +32,7 @@ def _fetch(id=None, sector=None):
     def build_tree(node_id):
         node = sector_crud.crud._read(NodeRead(id=node_id))
         title = f"{node.title} + {str(node.id)[:8]}"
+        title = node.title
         children = sector_crud.crud.get_children(NodeRead(id=node_id))
         children = sorted(children, key=lambda x: 0 if x.title == "_" else 1)
         if not children:

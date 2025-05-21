@@ -1,0 +1,11 @@
+Screen {
+    align: center middle;
+}
+
+MainArea {
+    width: 98%;
+    height: 90%;
+    background: $panel;
+    border: $secondary tall;
+    content-align: center middle;
+}

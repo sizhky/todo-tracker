@@ -25,7 +25,7 @@ def create_db_and_tables():
     # Import models here specifically for table creation to ensure they are registered
     # with SQLModel.metadata before create_all is called.
     # This avoids circular dependencies if models also import db components.
-    from ..models import Node, TimeEntry  # noqa: F401 - Imported for side effect of table registration
+    from ..models import Node, TimeEntryV2  # noqa: F401 - Imported for side effect of table registration
 
     SQLModel.metadata.create_all(engine)
 

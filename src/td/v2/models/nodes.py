@@ -48,7 +48,7 @@ class Node(SQLModel, table=True):
     )
 
 
-class TimeEntry(SQLModel, table=True):
+class TimeEntryV2(SQLModel, table=True):
     __tablename__ = "time_entry"
     __table_args__ = {"extend_existing": True}
 
