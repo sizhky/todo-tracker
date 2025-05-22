@@ -19,7 +19,7 @@ def truncate_meta(meta):
     return meta
 
 
-def _fetch(id=None, sector=None):
+def _fetch(id=None, sector=None, filters=None):
     """
     Test command to check if the CLI is working.
     """
@@ -34,19 +34,37 @@ def _fetch(id=None, sector=None):
         node = SCHEMA_OUT_MAPPING[node.type](**node.model_dump())
         children = sector_crud.crud.get_children(NodeRead(id=node_id))
         children = sorted(children, key=lambda x: 0 if x.title == "_" else 1)
+
+        # Apply filters if provided
+        if filters:
+            # Filter completed tasks older than specified time
+            if (
+                "hide_completed_older_than" in filters
+                and node.status == NodeStatus.completed
+            ):
+                if (
+                    hasattr(node, "updated_at")
+                    and node.updated_at < filters["hide_completed_older_than"]
+                ):
+                    return None, None
+
         if not children:
             return node, node
+
         subtree = AD()
         subtree["__node"] = node
         for child in children:
             child_node, child_tree = build_tree(child.id)
-            subtree[child_node.title] = child_tree
+            if child_node is not None:  # Only add if node wasn't filtered out
+                subtree[child_node.title] = child_tree
+
         return node, subtree
 
     for node_id in ids:
         node, tree = build_tree(node_id)
-        o[node.title] = tree
-        o["__node"] = node
+        if node is not None:  # Only add if node wasn't filtered out
+            o[node.title] = tree
+            o["__node"] = node
     return o
 
 
@@ -65,8 +83,16 @@ def fetch_all_paths(incomplete: str):
     return o
 
 
-def fetch(id=None, sector=None, as_dataframe=True):
-    o = _fetch(id=id, sector=sector)
+def fetch(id=None, sector=None, as_dataframe=True, filters=None):
+    # Default filter for hiding completed tasks older than 5 minutes
+    if filters is None:
+        from datetime import datetime, timedelta, timezone
+
+        current_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        five_minutes_ago = current_time - timedelta(minutes=1)
+        filters = {"hide_completed_older_than": five_minutes_ago}
+
+    o = _fetch(id=id, sector=sector, filters=filters)
     if as_dataframe:
         o.drop("__node")
         o = o.map(lambda x: truncate_meta(x.meta) if hasattr(x, "meta") else x)

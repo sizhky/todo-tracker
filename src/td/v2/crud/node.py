@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from torch_snippets import AD, in_debug_mode, line
 from typing import Type, TypeVar, Optional, List
 from pydantic import BaseModel
@@ -18,7 +18,6 @@ from ..models.nodes import (
 )
 from ..core.db import engine  # Import the engine to create a session if needed
 
-# from rich import print
 
 SchemaIn = TypeVar("SchemaIn")
 SchemaOut = TypeVar("SchemaOut")
@@ -97,6 +96,21 @@ class NodeCrud:
             parent_id = node.id
 
         return SCHEMA_OUT_MAPPING[node.type](**node.dict()) if node else None
+
+    def infer_hierarchy(self, data: SchemaIn) -> Optional[SchemaOut]:
+        node_id = data.id
+        if isinstance(node_id, str):
+            node_id = UUID(node_id)
+        if not node_id:
+            raise ValueError("Node ID is required for inferring hierarchy")
+        path = []
+        while True:
+            node = self.db.get(Node, node_id)
+            path.append(node.title)
+            node_id = node.parent_id
+            if node_id is None:
+                break
+        return "/".join(path[::-1])
 
     def _fetch_from_hierarchy(self, path):
         # Fetch the hierarchy from the database
@@ -292,7 +306,7 @@ class NodeCrud:
             if not hasattr(node, key) or value is None:
                 continue
             setattr(node, key, value)
-        node.updated_at = datetime.now()
+        node.updated_at = datetime.now(timezone.utc)
         self.db.add(node)
         self.db.commit()
         self.db.refresh(node)

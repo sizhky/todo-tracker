@@ -1,8 +1,9 @@
 .PHONY: tests
 
 textual-ui:
-	ptw --runner "python -m src.textual_ui.v2.app"
-	
+	export TDDB=default; \
+	ptw --runner "tdx";
+
 dummy-ui:
 	python -m src.learning_textual
 

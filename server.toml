@@ -1,0 +1,6 @@
+[app.tdx]
+command = "tdx"
+slug = "tdx"
+
+[account]
+api_key = "P9CV4PJK0M7A"

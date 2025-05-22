@@ -1,22 +1,25 @@
 """Main application for the Textual UI v2."""
 
-from torch_snippets import AD
+from torch_snippets import AD, tryy
 from typing import ClassVar
 
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, Tree
 from textual.widgets._tree import TreeNode
 from textual.binding import Binding, BindingType
+from textual.containers import Vertical
+from textual.widgets import Input, Button, TextArea
+from textual.screen import ModalScreen
 
 from td.v2.cli.display import fetch
-from td.v2.cli import CRUDS, NodeStatus
+from td.v2.cli import CRUDS, NodeStatus, TaskCreate
 
 
 def infer_node_text(key, value) -> str:
     if value.status == NodeStatus.completed:
         return f"[green]{key}[/]"
     elif key.startswith("*"):
-        return f"[blue]{key.strip('*')}[/]"
+        return f"[bold][yellow]{key.strip('*')}[/yellow][/bold]"
     else:
         return key
 
@@ -37,44 +40,92 @@ def add_children(item: TreeNode, subtree: AD, expand_children=False) -> None:
             child = item.add_leaf(infer_node_text(key, value), data=value)
 
 
+class AddTaskPopup(ModalScreen):
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            placeholder = str(self.placeholder)
+            yield TextArea(placeholder)
+            yield Input(placeholder="", id="task_input")
+            yield Button("Add", id="add_button")
+            yield Button("Cancel", id="cancel_button")
+
+    def on_mount(self):
+        self.query_one("#task_input", Input).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        task_input = self.query_one("#task_input", Input).value
+        self.dismiss(task_input if event.button.id == "add_button" else None)
+
+
 class Todos(Tree):
     BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("h", "collapse_and_cursor_parent", "Cursor to parent", show=False),
-        Binding("H", "cursor_parent", "Cursor to parent", show=False),
-        Binding("l", "expand_and_move_down", "Expand and move down", show=False),
-        Binding("L", "cursor_down", "Move down", show=False),
+        Binding("h", "collapse_and_cursor_parent", "🐍 Cursor to Parent", show=False),
+        Binding("H", "cursor_parent", "🐍 Cursor to Parent", show=False),
+        Binding(
+            "l", "expand_and_move_down", "🐍 Expand and Move to First Child", show=False
+        ),
+        Binding("L", "cursor_down", "🐍 Move down", show=False),
         Binding(
             "K",
             "cursor_previous_sibling",
-            "Cursor to previous sibling",
+            "🐍 Cursor to previous sibling",
             show=False,
         ),
         Binding(
             "J",
             "cursor_next_sibling",
-            "Cursor to next sibling",
+            "🐍 Cursor to next sibling",
             show=False,
         ),
-        Binding("enter", "select_cursor", "Select", show=False),
-        Binding("tab", "toggle_node", "Toggle", show=False),
+        Binding("tab", "toggle_node", "🐍 Toggle", show=False),
+        Binding("k", "cursor_up", "🐍 Cursor Up", show=False),
+        Binding("j", "cursor_down", "🐍 Cursor Down", show=False),
+        Binding("0", "cursor_top", "🐍 Cursor to Top of Page", show=False),
+        Binding("G", "cursor_page_bottom", "🐍 Cursor to Bottom of Page", show=False),
+        Binding("x", "toggle_critical", "🐍 Mark as Critical", show=False),
         Binding(
-            "shift+space", "toggle_expand_all", "Expand or collapse all", show=False
+            "shift+tab",
+            "recursive_toggle_all",
+            "🐍 Expand/Collapse All Children Recursively",
+            show=False,
         ),
-        Binding("k", "cursor_up", "Cursor Up", show=False),
-        Binding("j", "cursor_down", "Cursor Down", show=False),
-        Binding("0", "cursor_top", "Cursor to top", show=False),
-        Binding("G", "cursor_page_bottom", "Cursor to Bottom of Page", show=False),
-        Binding("x", "toggle_critical", "Mark as Critical", show=False),
-        Binding("shift+tab", "recursive_toggle_all", "Expand/Collapse All", show=False),
-        Binding("z", "mark_complete", "Expand/Collapse All", show=False),
+        Binding("z", "mark_complete", "🐍 Mark a task as complete", show=False),
+        Binding("n", "add_new_task", "🐍 Add New Task", show=False),
     ]
+
+    async def action_add_new_task(self) -> None:
+        node = self.cursor_node.data
+        if node.id == "root":
+            return
+        crud = CRUDS.get(node.type)
+        path = crud.crud.infer_hierarchy(node)
+        from torch_snippets import writelines
+
+        writelines([node], "/tmp/critical.txt", "w")
+
+        @tryy
+        def _write(task_text):
+            if "/" in task_text:
+                _path = path + "/" + "/".join(task_text.split("/")[:-1])
+                task_text = task_text.split("/")[-1]
+            else:
+                _path = path
+            _ = crud.Create(
+                data=TaskCreate(
+                    title=task_text,
+                    path=_path,
+                )
+            )
+
+        popup = AddTaskPopup()
+        popup.placeholder = (
+            f"Add item under {path} (Use / to auto create sector/area/project/section)"
+        )
+        await self.app.push_screen(popup, _write)
 
     def action_mark_complete(self) -> None:
         node = self.cursor_node
         crud = CRUDS.get(node.data.type).crud
-        from torch_snippets import writelines
-
-        writelines([str(node)], "/tmp/critical.txt", "w")
         crud.toggle_complete(node.data)
 
     def action_recursive_toggle_all(self) -> None:
@@ -185,6 +236,9 @@ class TodoAppV2(App):
     async def on_mount(self) -> None:
         self.theme = "dracula"
         self.set_interval(1.0, self.refresh_data)
+
+    async def on_ready(self) -> None:
+        self.action_show_help_panel()
 
     async def refresh_data(self) -> None:
         new_data = fetch(as_dataframe=False)

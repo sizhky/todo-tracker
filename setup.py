@@ -15,8 +15,8 @@ setup(
     entry_points={
         "console_scripts": [
             "td=td:cli",
-            "tdx=td:_cli",
-            "tdui=td.ui.textual.v2.app:main",
+            "tdx-old=td:_cli",
+            "tdx=td.ui.textual.v2.app:main",
         ],
     },
     python_requires=">=3.8",
