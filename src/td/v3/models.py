@@ -43,7 +43,8 @@ class Node(SQLModel, table=True):
         Index("idx_node_title_type", "title", "type"),
         Index("idx_node_path", "path"),
         Index("idx_node_path_title", "path", "title"),
-        {"extend_existing": True},
+        Index("idx_node_path_title_unique", "path", "title", unique=True),
+        {"extend_existing": True, "sqlite_autoincrement": True},
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
@@ -100,6 +101,9 @@ class NodePathMixin(BaseModel):
             depth = len(path_parts)
             values["type"] = node_type_sequence[depth]
             values["path"] = path.strip("/")
+        assert values["title"] != "d", (
+            "For some stupid reason, 'd' is not allowed as a title"
+        )
         return values
 
 
@@ -133,14 +137,20 @@ class NodeUpdate(NodeRead):
             title=self.title,
             path=self.path,
         )
+
+        if self.new_path is None:
+            self.new_path = self.path
+            self.new_title = self.title
+
         new_node = NodeCreate(
-            title=self.new_title or self.title,
-            path=self.new_path or self.path,
+            title=self.new_title,
+            path=self.new_path,
             status=self.new_status if self.new_status is not None else self.status,
             order=self.new_order if self.new_order is not None else self.order,
             meta=self.new_meta if self.new_meta is not None else self.meta,
             parent_id=None,
         )
+        print(f"Old Node: {old_node}\nNew Node: {new_node}\n\n")
         return old_node, new_node
 
 

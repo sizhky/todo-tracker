@@ -10,7 +10,19 @@ from td.v3 import (
     NodeOutputType,
     OUTPUT_TYPE_REGISTRY,
     NodeStatus,
+    NodeType,
 )
+
+
+def rollback_on_fail(fn):
+    def wrapper(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except Exception:
+            self.db.rollback()
+            raise
+
+    return wrapper
 
 
 class NodeCrud:
@@ -27,10 +39,16 @@ class NodeCrud:
         ):
             self.db.close()
 
+    @rollback_on_fail
     def _create_node(self, node: NodeCreate) -> NodeOutputType:
         """
         Create a node in the database.
         """
+        existing = self.db.exec(
+            select(Node).where(Node.title == node.title).where(Node.path == node.path)
+        ).first()
+        if existing:
+            return OUTPUT_TYPE_REGISTRY[existing.type].from_orm(existing)
         if "," in node.title:
             parent = self._get_or_create_parent(node)
             if parent:
@@ -127,6 +145,7 @@ class NodeCrud:
         nodes = self._read_nodes()
         return build_tree(nodes, set())
 
+    @rollback_on_fail
     def _update_node(self, node_in: NodeUpdate) -> NodeOutputType:
         """
         Update a node in the database.
@@ -166,6 +185,7 @@ class NodeCrud:
         node = OUTPUT_TYPE_REGISTRY[node.type].from_orm(node)
         return node
 
+    @rollback_on_fail
     def promote_node(self, node: NodeRead) -> NodeOutputType:
         """
         Promote a node and its children one level up in the hierarchy.
@@ -188,23 +208,35 @@ class NodeCrud:
 
         # Update the node's path and type
         old_path = raw_node.path
-        new_path = grandparent_node.path
-        if new_path:
-            new_path += f"/{grandparent_node.title}"
+        new_path = parent_node.path
         raw_node.path = new_path
         raw_node.type = parent_node.type  # promote to parent's level
         raw_node.parent_id = grandparent_node.id
         self.db.add(raw_node)
 
         # Update all children recursively
+        # Updated promote_node method with updated update_descendants function
         def update_descendants(current_node, old_prefix, new_prefix):
+            node_type_sequence = [
+                NodeType.sector,
+                NodeType.area,
+                NodeType.project,
+                NodeType.section,
+                NodeType.task,
+                NodeType.subtask,
+            ]
             children = self.db.exec(
                 select(Node).where(Node.parent_id == current_node.id)
             ).all()
             for child in children:
                 if child.path.startswith(old_prefix):
-                    child.path = child.path.replace(old_prefix, new_prefix, 1)
+                    suffix = child.path[len(old_prefix) :]
+                    if suffix.startswith("/"):
+                        suffix = suffix[1:]
+                    child.path = f"{new_prefix}/{suffix}" if new_prefix else suffix
                 child.parent_id = current_node.id
+                depth = child.path.strip("/").count("/") + 1 if child.path else 0
+                child.type = node_type_sequence[depth]
                 self.db.add(child)
                 update_descendants(child, old_prefix, new_prefix)
 
@@ -213,6 +245,7 @@ class NodeCrud:
         self.db.refresh(raw_node)
         return OUTPUT_TYPE_REGISTRY[raw_node.type].from_orm(raw_node)
 
+    @rollback_on_fail
     def toggle_critical(self, node: NodeRead) -> NodeOutputType:
         """
         Toggle the critical status of a node.
@@ -234,6 +267,7 @@ class NodeCrud:
         self.db.refresh(raw_node)
         return OUTPUT_TYPE_REGISTRY[raw_node.type].from_orm(raw_node)
 
+    @rollback_on_fail
     def toggle_complete(self, node: NodeRead) -> NodeOutputType:
         """
         Toggle the completion status of a node.

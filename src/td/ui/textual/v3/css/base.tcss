@@ -22,3 +22,11 @@ Todos {
     border: $accent round;
     padding: 1;
 }
+
+#show_path {
+    height: 33%;
+}
+
+Button {
+    width: 50%
+}

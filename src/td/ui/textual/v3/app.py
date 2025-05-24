@@ -7,20 +7,35 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, Tree
 from textual.widgets._tree import TreeNode
 from textual.binding import Binding, BindingType
-from textual.containers import Vertical
+from textual.containers import Vertical, Horizontal
 from textual.widgets import Input, Button, TextArea
 from textual.screen import ModalScreen
 
-from td.v3 import NodeCrud, NodeStatus, NodeCreate
+from td.v3 import NodeCrud, NodeStatus, NodeCreate, NodeType
 
 
 def infer_node_text(key, value) -> str:
     if value.status == NodeStatus.completed:
-        return f"[green]{key}[/]"
+        key = f"{key} ✓"
     elif key.startswith("*"):
-        return f"[bold][yellow]{key.strip('*')}[/yellow][/bold]"
-    else:
-        return key
+        key = f"{key} ✱"
+    # else:
+    #     return key
+
+    # Gradient-based color assignment from purple to teal for hierarchy levels
+    gradient_colors = ["#e40303", "#ff8c00", "#ffed00", "#008026", "#004dff", "#750787"]
+
+    type_to_index = {
+        NodeType.sector: 0,
+        NodeType.area: 1,
+        NodeType.project: 2,
+        NodeType.section: 3,
+        NodeType.task: 4,
+        NodeType.subtask: 5,
+    }
+
+    color = gradient_colors[type_to_index.get(value.type, 0)]
+    return f"[{color}]{key}[/]"
 
 
 def add_children(item: TreeNode, subtree: AD, expand_children=False) -> None:
@@ -40,13 +55,19 @@ def add_children(item: TreeNode, subtree: AD, expand_children=False) -> None:
 
 
 class AddTaskPopup(ModalScreen):
+    BINDINGS = [
+        ("enter", "submit", "Submit"),
+        ("escape", "cancel", "Cancel"),
+    ]
+
     def compose(self) -> ComposeResult:
         with Vertical():
             placeholder = str(self.placeholder)
-            yield TextArea(placeholder)
+            yield TextArea(placeholder, id="show_path")
             yield Input(placeholder="", id="task_input")
-            yield Button("Add", id="add_button")
-            yield Button("Cancel", id="cancel_button")
+            with Horizontal(classes="task-buttons"):
+                yield Button("Add / Enter", id="add_button", variant="success")
+                yield Button("Cancel / Escape", id="cancel_button", variant="error")
 
     def on_mount(self):
         self.query_one("#task_input", Input).focus()
@@ -54,6 +75,12 @@ class AddTaskPopup(ModalScreen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         task_input = self.query_one("#task_input", Input).value
         self.dismiss(task_input if event.button.id == "add_button" else None)
+
+    def action_submit(self):
+        self.on_button_pressed(Button.Pressed(self.query_one("#add_button", Button)))
+
+    def action_cancel(self):
+        self.on_button_pressed(Button.Pressed(self.query_one("#cancel_button", Button)))
 
 
 class Todos(Tree):
@@ -109,13 +136,13 @@ class Todos(Tree):
 
     async def action_add_new_task(self) -> None:
         node = self.cursor_node.data
-        if node.id == "root":
+        if node.type == NodeType.subtask:
+            # pop up saying "Cannot add task under a subtask"
+            self.app.notify("Cannot add task under a subtask", title="Error")
             return
-        from torch_snippets import writelines
-
-        writelines([node], "/tmp/critical.txt", "w")
         path = f"{node.path}/{node.title}"
 
+        @tryy
         def _write(task_text):
             if "/" in task_text:
                 _path = path + "/" + "/".join(task_text.strip("/").split("/")[:-1])
@@ -130,8 +157,62 @@ class Todos(Tree):
             )
 
         popup = AddTaskPopup()
+        _path_parts = path.strip("/").split("/")
+        from torch_snippets import writelines
+
+        writelines([_path_parts, path, node], "/tmp/tmp.txt", "w")
+        _path = {}
+
+        if _path_parts == [""]:
+            _path = "root node"
+            eg = (
+                "sector for a new sector\n"
+                "sector/area for a new area\n"
+                "sector/area/project for a new project\n"
+                "sector/area/project/section for a new section\n"
+                "sector/area/project/section/task for a new task\n"
+                "sector/area/project/section/task/subtask for a new subtask"
+            )
+            items = "sector, area, project, section and task"
+        elif len(_path_parts) > 0:
+            _path["sector"] = _path_parts[0]
+            eg = (
+                "area for a new area\n"
+                "area/project for a new project\n"
+                "area/project/section for a new section\n"
+                "area/project/section/task for a new task\n"
+                "area/project/section/task/subtask for a new subtask"
+            )
+            items = "area, project, section and task"
+        if len(_path_parts) > 1:
+            _path["area"] = _path_parts[1]
+            eg = (
+                "project for a new project\n"
+                "project/section for a new section\n"
+                "project/section/task for a new task\n"
+                "project/section/task/subtask for a new subtask"
+            )
+            items = "project, section and task"
+        if len(_path_parts) > 2:
+            _path["project"] = _path_parts[2]
+            eg = (
+                "section for a new section\n"
+                "section/task for a new task\n"
+                "section/task/subtask for a new subtask"
+            )
+            items = "section and task"
+        if len(_path_parts) > 3:
+            _path["section"] = _path_parts[3]
+            eg = "task for a new task\ntask/subtask for a new subtask"
+            items = "task"
+        if len(_path_parts) > 4:
+            _path["task"] = _path_parts[4]
+            eg = "task/subtask for a new subtask"
+
         popup.placeholder = (
-            f"Add item under {path} (Use / to auto create sector/area/project/section)"
+            f"Add item under {_path}\n"
+            f"(Use / to auto create intermediate {items})\n"
+            f"E.g.,\n{eg}\n"
         )
         await self.app.push_screen(popup, _write)
 
@@ -193,7 +274,7 @@ class Todos(Tree):
     @classmethod
     def from_AD(cls, todos: AD):
         self = cls("Todos")
-        self.root.data = AD(id="root")
+        self.root.data = AD(id="root", path="", title="", type="root")
         self.root.expand()
         add_children(self.root, todos)
         return self
@@ -239,6 +320,7 @@ class MainArea(Static):
 class TodoAppV2(App):
     CSS_PATH = "css/base.tcss"
     BINDINGS = [
+        ("escape", "quit", "Quit"),
         ("q", "quit", "Quit"),
         ("d", "toggle_dark", "Toggle Dark Mode"),
     ]
