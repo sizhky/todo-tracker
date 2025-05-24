@@ -126,8 +126,7 @@ class NodeCrud:
         nodes = self.db.exec(select(Node).where(Node.path == "")).all()
         return [OUTPUT_TYPE_REGISTRY[node.type].from_orm(node) for node in nodes]
 
-    @property
-    def tree(self) -> AD:
+    def _tree(self) -> AD:
         def build_tree(nodes: list[NodeOutputType], visited: set) -> AD:
             o = AD()
             for s in nodes:
@@ -144,6 +143,35 @@ class NodeCrud:
 
         nodes = self._read_nodes()
         return build_tree(nodes, set())
+
+    @property
+    def tree(self) -> AD:
+        return self._tree()
+
+    def critical_nodes(self) -> AD:
+        import pandas as pd
+
+        tree = self._tree()
+        df1 = tree.flatten_and_make_dataframe()
+        df = df1[
+            df1.apply(
+                lambda row: any(isinstance(x, str) and "*" in x for x in row), axis=1
+            )
+        ]
+        tree = AD()
+        for _, row in df.iterrows():
+            cursor = tree
+            for col in row.index:
+                val = row[col]
+                if pd.isna(val):
+                    break
+                if col == "__node":
+                    cursor["__node"] = val
+                else:
+                    if val not in cursor:
+                        cursor[val] = AD()
+                    cursor = cursor[val]
+        return tree
 
     @rollback_on_fail
     def _update_node(self, node_in: NodeUpdate) -> NodeOutputType:
