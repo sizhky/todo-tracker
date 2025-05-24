@@ -16,14 +16,12 @@ from td.v3 import NodeCrud, NodeStatus, NodeCreate, NodeType
 
 def infer_node_text(key, value) -> str:
     if value.status == NodeStatus.completed:
-        key = f"{key} ✓"
+        key = f"✓ {key}"
     elif key.startswith("*"):
-        key = f"{key} ✱"
-    # else:
-    #     return key
+        key = f"✱ {key.strip('*')}"
 
     # Gradient-based color assignment from purple to teal for hierarchy levels
-    gradient_colors = ["#e40303", "#ff8c00", "#ffed00", "#008026", "#004dff", "#750787"]
+    gradient_colors = ["#e40303", "#ff8c00", "#ffed00", "#008026", "#004dff", "#BD03D9"]
 
     type_to_index = {
         NodeType.sector: 0,
@@ -49,7 +47,7 @@ def add_children(item: TreeNode, subtree: AD, expand_children=False) -> None:
             # child = item.add(f'{key} + {str(__node.id)[:8]}', data=__node)
             if expand_children:
                 child.expand()
-            add_children(child, value)
+            add_children(child, value, expand_children=expand_children)
         else:
             child = item.add_leaf(infer_node_text(key, value), data=value)
 
@@ -272,18 +270,24 @@ class Todos(Tree):
         super().__init__(title)
 
     @classmethod
-    def from_AD(cls, todos: AD):
+    def from_AD(cls, todos: AD, expand_children: bool = False) -> "Todos":
         self = cls("Todos")
         self.root.data = AD(id="root", path="", title="", type="root")
         self.root.expand()
-        add_children(self.root, todos)
+        add_children(self.root, todos, expand_children=expand_children)
         return self
 
 
 class MainArea(Static):
+    def __init__(self, title: str = "", id: str = None):
+        super().__init__(id=id)
+        self.title = title
+
     def compose(self) -> ComposeResult:
+        yield Static(f"[bold]{self.title}[/]", classes="main-header")
         n = NodeCrud()
-        self._tree = Todos.from_AD(n.tree)
+        expand_children = True if self.id == "critical_area" else False
+        self._tree = Todos.from_AD(n.tree, expand_children=expand_children)
         yield self._tree
 
     def update_data(self, new_data):
@@ -324,7 +328,8 @@ class TodoAppV2(App):
         ("q", "quit", "Quit"),
         ("d", "toggle_dark", "Toggle Dark Mode"),
     ]
-    main_area = MainArea()
+    main_area = MainArea(title="All Tasks")
+    critical_area = MainArea(id="critical_area", title="Critical Tasks")
     n = NodeCrud()
 
     async def on_mount(self) -> None:
@@ -337,6 +342,8 @@ class TodoAppV2(App):
     async def refresh_data(self) -> None:
         new_data = self.n.tree
         self.main_area.update_data(new_data)
+        new_critical_data = self.n.critical_nodes()
+        self.critical_area.update_data(new_critical_data)
 
     def action_toggle_dark(self) -> None:
         if self.theme == "dracula":
@@ -346,7 +353,9 @@ class TodoAppV2(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield self.main_area
+        with Horizontal():
+            yield self.main_area
+            yield self.critical_area
         yield Footer()
 
 

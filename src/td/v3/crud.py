@@ -1,4 +1,5 @@
-from torch_snippets import AD
+from torch_snippets import AD, flatten
+from uuid import UUID
 from sqlmodel import Session, select
 from sqlalchemy import text
 from .core import engine
@@ -23,6 +24,21 @@ def rollback_on_fail(fn):
             raise
 
     return wrapper
+
+
+def add_node_info(crit, full_tree, suffix=""):
+    for k, v in crit.items():
+        key_path = f"{suffix}.{k}" if suffix else k
+        try:
+            if "__node" not in v and isinstance(v, AD):
+                ref = full_tree.get(key_path)
+                if ref and "__node" in ref:
+                    crit.__node = ref.__node
+                    break
+        except Exception:
+            pass
+        if isinstance(v, AD):
+            add_node_info(v, full_tree, key_path)
 
 
 class NodeCrud:
@@ -122,15 +138,43 @@ class NodeCrud:
         node = OUTPUT_TYPE_REGISTRY[node.type].from_orm(node)
         return node
 
-    def _read_nodes(self) -> list[NodeOutputType]:
+    def _read_root_nodes(self) -> list[NodeOutputType]:
         nodes = self.db.exec(select(Node).where(Node.path == "")).all()
         return [OUTPUT_TYPE_REGISTRY[node.type].from_orm(node) for node in nodes]
 
-    def _tree(self) -> AD:
+    def get_lineage(self, node: NodeRead) -> list[NodeOutputType]:
+        """
+        Return the lineage of a node from itself up to the root.
+        """
+        raw_node = self.db.exec(
+            select(Node).where(Node.title == node.title).where(Node.path == node.path)
+        ).first()
+        if not raw_node:
+            raise ValueError(
+                f"Node with title {node.title} and path {node.path} not found."
+            )
+
+        lineage = []
+        while raw_node:
+            lineage.append(OUTPUT_TYPE_REGISTRY[raw_node.type].from_orm(raw_node))
+            raw_node = (
+                self.db.get(Node, raw_node.parent_id) if raw_node.parent_id else None
+            )
+
+        return lineage
+
+    def _tree(self, ids: list[UUID] = None) -> AD:
+        """
+        Build a tree of nodes, optionally filtered by node IDs.
+        """
+
         def build_tree(nodes: list[NodeOutputType], visited: set) -> AD:
             o = AD()
             for s in nodes:
                 if s.id in visited:
+                    continue
+                # Only include nodes whose IDs are in the provided ids list (if given)
+                if ids is not None and s.id not in ids:
                     continue
                 visited.add(s.id)
                 if not hasattr(s, "children") or not s.children:
@@ -141,37 +185,39 @@ class NodeCrud:
                     o[s.title].update(build_tree(s.children, visited))
             return o
 
-        nodes = self._read_nodes()
-        return build_tree(nodes, set())
+        all_nodes = self.db.exec(select(Node)).all()
+        if ids is not None:
+            all_nodes = [n for n in all_nodes if n.id in ids]
+        all_nodes = [OUTPUT_TYPE_REGISTRY[n.type].from_orm(n) for n in all_nodes]
+        return build_tree(all_nodes, set())
 
     @property
     def tree(self) -> AD:
         return self._tree()
 
     def critical_nodes(self) -> AD:
-        import pandas as pd
-
-        tree = self._tree()
-        df1 = tree.flatten_and_make_dataframe()
+        t = self.tree
+        df1 = t.flatten_and_make_dataframe()
         df = df1[
             df1.apply(
                 lambda row: any(isinstance(x, str) and "*" in x for x in row), axis=1
             )
         ]
-        tree = AD()
-        for _, row in df.iterrows():
-            cursor = tree
-            for col in row.index:
-                val = row[col]
-                if pd.isna(val):
-                    break
-                if col == "__node":
-                    cursor["__node"] = val
-                else:
-                    if val not in cursor:
-                        cursor[val] = AD()
-                    cursor = cursor[val]
-        return tree
+        paths = flatten(
+            df.apply(
+                lambda row: [f"{x.path}/{x.title}" for x in row if hasattr(x, "path")],
+                axis=1,
+            ).tolist()
+        )
+        ids = set(
+            [
+                n.id
+                for n in flatten(
+                    [self.get_lineage(self._read_node(NodeRead(path=p))) for p in paths]
+                )
+            ]
+        )
+        return self._tree(ids=ids)
 
     @rollback_on_fail
     def _update_node(self, node_in: NodeUpdate) -> NodeOutputType:

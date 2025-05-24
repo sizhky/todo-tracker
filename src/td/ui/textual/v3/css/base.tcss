@@ -3,9 +3,13 @@ Screen {
 }
 
 MainArea {
+    width: 1fr;
     padding: 2 2;
     background: transparent;
     content-align: center middle;
+}
+
+#critical_area {
 }
 
 AddTaskPopup {
