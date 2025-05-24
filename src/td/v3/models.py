@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from torch_snippets import ifnone, AD
 
-from sqlmodel import SQLModel, Field, Relationship, Column, SmallInteger
+from sqlmodel import SQLModel, Field, Relationship, Column, SmallInteger, select
 from typing import Optional, List, Union
 from uuid import uuid4, UUID
 from enum import Enum
@@ -16,6 +16,19 @@ class NodeType(int, Enum):
     section = 300
     task = 400
     subtask = 500
+
+    def __str__(self):
+        return NODE_TYPE_ALIASES.get(self, self.name)
+
+
+NODE_TYPE_ALIASES = {
+    NodeType.sector: "sr",
+    NodeType.area: "a",
+    NodeType.project: "p",
+    NodeType.section: "sn",
+    NodeType.task: "t",
+    NodeType.subtask: "st",
+}
 
 
 class NodeStatus(int, Enum):
@@ -106,11 +119,29 @@ class NodeRead(NodePathMixin):
 
 
 class NodeUpdate(NodeRead):
-    title: Optional[str] = None
-    type: Optional[NodeType] = None
     status: Optional[NodeStatus] = None
     order: Optional[float] = None
     meta: Optional[str] = None
+    new_title: Optional[str] = None
+    new_path: Optional[str] = None
+    new_status: Optional[NodeStatus] = None
+    new_order: Optional[float] = None
+    new_meta: Optional[str] = None
+
+    def make_old_and_new_nodes(self):
+        old_node = NodeRead(
+            title=self.title,
+            path=self.path,
+        )
+        new_node = NodeCreate(
+            title=self.new_title or self.title,
+            path=self.new_path or self.path,
+            status=self.new_status if self.new_status is not None else self.status,
+            order=self.new_order if self.new_order is not None else self.order,
+            meta=self.new_meta if self.new_meta is not None else self.meta,
+            parent_id=None,
+        )
+        return old_node, new_node
 
 
 class NodeDelete(NodeRead): ...
@@ -124,12 +155,19 @@ class NodeOutput(BaseModel):
     status: NodeStatus
     order: float = None
     meta: str = None
+    parent_id: UUID | None
 
     class Config:
         from_attributes = True
         use_enum_values = False
 
     def __repr__(self):
+        parent_id = "" if not hasattr(self, "parent_id") else str(self.parent_id)[:4]
+        return f"🧩{self.title[:4]}... ({self.type}) # {str(self.id)[:4]} @ {parent_id}"
+
+    __str__ = __repr__
+
+    def __repr0__(self):
         indent = "  "
         depth = 0 if not self.path else self.path.strip("/").count("/") + 1
         prefix = indent * depth
