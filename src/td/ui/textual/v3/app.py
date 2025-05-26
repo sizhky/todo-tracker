@@ -11,7 +11,7 @@ from textual.containers import Vertical, Horizontal
 from textual.widgets import Input, Button, TextArea
 from textual.screen import ModalScreen
 
-from td.v3 import NodeCrud, NodeStatus, NodeCreate, NodeType
+from td.v3 import NodeCrud, NodeStatus, NodeCreate, NodeType, NodeUpdate
 
 
 def infer_node_text(key, value) -> str:
@@ -122,15 +122,37 @@ class Todos(Tree):
         Binding("z", "mark_complete", "🐍 Mark a task as complete", show=False),
         Binding("n", "add_new_task", "🐍 Add New Task", show=False),
         Binding("<", "promote_node", "🐍 Promote Node", show=False),
-        Binding("m", "action_move_node", "🐍 Move Node", show=False),
+        Binding("e", "change_node", "🐍 Change Title", show=False),
     ]
     crud = NodeCrud()
 
-    def action_move_node(self) -> None:
+    @tryy
+    async def action_change_node(self) -> None:
         node = self.cursor_node.data
         if node.id == "root":
             return
-        self.crud._update_node(node)
+
+        # @tryy
+        def _write(task_text):
+            if not task_text:
+                return
+            new_node = NodeUpdate(**node.model_dump())
+
+            if "/" not in task_text:
+                new_node.new_title = task_text.strip()
+            else:
+                new_node.new_path = task_text.strip()
+
+            try:
+                _ = self.crud._update_node(new_node)
+            except Exception as e:
+                import traceback
+
+                self.app.notify(traceback.format_exc(), title="Error", severity="error")
+
+        popup = AddTaskPopup()
+        popup.placeholder = f"Change title for {node.title}\n"
+        await self.app.push_screen(popup, _write)
 
     def action_promote_node(self) -> None:
         node = self.cursor_node.data
@@ -142,7 +164,9 @@ class Todos(Tree):
         node = self.cursor_node.data
         if node.type == NodeType.subtask:
             # pop up saying "Cannot add task under a subtask"
-            self.app.notify("Cannot add task under a subtask", title="Error")
+            self.app.notify(
+                "Cannot add task under a subtask", title="Error", severity="error"
+            )
             return
         path = f"{node.path}/{node.title}"
 
@@ -162,9 +186,6 @@ class Todos(Tree):
 
         popup = AddTaskPopup()
         _path_parts = path.strip("/").split("/")
-        from torch_snippets import writelines
-
-        writelines([_path_parts, path, node], "/tmp/tmp.txt", "w")
         _path = {}
 
         if _path_parts == [""]:

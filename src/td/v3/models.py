@@ -137,10 +137,15 @@ class NodeUpdate(NodeRead):
             title=self.title,
             path=self.path,
         )
-
-        if self.new_path is None:
+        """
+        NU(path='')
+        
+        """
+        if self.new_path is None and self.new_title is None:
             self.new_path = self.path
             self.new_title = self.title
+        elif self.new_path is None and self.new_title is not None:
+            self.new_path = self.path
 
         new_node = NodeCreate(
             title=self.new_title,
@@ -150,7 +155,7 @@ class NodeUpdate(NodeRead):
             meta=self.new_meta if self.new_meta is not None else self.meta,
             parent_id=None,
         )
-        print(f"Old Node: {old_node}\nNew Node: {new_node}\n\n")
+        # print(f"Old Node: {old_node}\nNew Node: {new_node}\n\n")
         return old_node, new_node
 
 

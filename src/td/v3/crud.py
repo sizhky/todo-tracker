@@ -26,21 +26,6 @@ def rollback_on_fail(fn):
     return wrapper
 
 
-def add_node_info(crit, full_tree, suffix=""):
-    for k, v in crit.items():
-        key_path = f"{suffix}.{k}" if suffix else k
-        try:
-            if "__node" not in v and isinstance(v, AD):
-                ref = full_tree.get(key_path)
-                if ref and "__node" in ref:
-                    crit.__node = ref.__node
-                    break
-        except Exception:
-            pass
-        if isinstance(v, AD):
-            add_node_info(v, full_tree, key_path)
-
-
 class NodeCrud:
     def __init__(self, db=None):
         self.db = db if db is not None else Session(engine)
@@ -248,15 +233,30 @@ class NodeCrud:
                 ).first()
                 if parent:
                     node.parent_id = parent.id
+        # delete the old node
+        self.db.delete(node)
+        # create the new node
+        _new_node = NodeCreate(**old_node.model_dump(exclude_unset=True))
         for key, value in new_node.model_dump(exclude_unset=True).items():
             key = key.replace("new_", "")
             if value is None:
                 continue
-            setattr(node, key, value)
-        self.db.add(node)
-        self.db.commit()
-        self.db.refresh(node)
-        node = OUTPUT_TYPE_REGISTRY[node.type].from_orm(node)
+            setattr(_new_node, key, value)
+        # ensure the new node does not exist in the db
+        existing = self.db.exec(
+            select(Node)
+            .where(Node.title == _new_node.title)
+            .where(Node.path == _new_node.path)
+        ).first()
+        if existing:
+            raise ValueError(
+                f"Node with title {_new_node.title} and path {_new_node.path} already exists."
+            )
+        new_node = self._create_node(_new_node)
+        # self.db.add(node)
+        # self.db.commit()
+        # self.db.refresh(node)
+        node = OUTPUT_TYPE_REGISTRY[new_node.type].from_orm(new_node)
         return node
 
     @rollback_on_fail
