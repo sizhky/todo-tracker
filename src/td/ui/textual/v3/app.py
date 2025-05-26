@@ -71,11 +71,17 @@ class AddTaskPopup(ModalScreen):
         self.query_one("#task_input", Input).focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        print(f"Button pressed: {event.button.id}")
         task_input = self.query_one("#task_input", Input).value
         self.dismiss(task_input if event.button.id == "add_button" else None)
 
     def action_submit(self):
-        self.on_button_pressed(Button.Pressed(self.query_one("#add_button", Button)))
+        task_input = self.query_one("#task_input", Input).value
+        self.dismiss(task_input)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        task_input = event.value
+        self.dismiss(task_input)
 
     def action_cancel(self):
         self.on_button_pressed(Button.Pressed(self.query_one("#cancel_button", Button)))
