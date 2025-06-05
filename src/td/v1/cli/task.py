@@ -334,9 +334,9 @@ def toggle_task(task_id: str):
             task = update_task_in_db(session, task_id, {"status": task_status})
             _time_entry = get_active_time_entry_for_task_from_db(session, task_id)
             if task.status == 1 and _time_entry:
-                from datetime import datetime
+                from datetime import datetime, timezone
 
-                end_time = datetime.now()
+                end_time = datetime.now(timezone.utc)
                 time_entry = TimeEntryUpdate(
                     task_id=task.id,
                     end_time=end_time,
