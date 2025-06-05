@@ -119,8 +119,8 @@ def calculate_total_time_for_task(db: Session, task_id: int) -> float:
     for entry in entries:
         start_time = entry.start_time
         end_time = (
-            entry.end_time or datetime.now()
-        )  # Use current time if entry is active
+            entry.end_time or datetime.now(timezone.utc)
+        )  # Use current UTC time if entry is active
         duration = end_time - start_time
         total_duration_seconds += duration.total_seconds()
 
