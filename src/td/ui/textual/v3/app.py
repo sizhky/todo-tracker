@@ -144,7 +144,7 @@ class Todos(Tree):
                 new_node.new_path = task_text.strip()
 
             try:
-                _ = self.crud._update_node(new_node)
+                _ = self.crud.move_node(new_node)
             except Exception as e:
                 import traceback
 
@@ -361,7 +361,7 @@ class TodoAppV2(App):
 
     async def on_mount(self) -> None:
         self.theme = "dracula"
-        self.set_interval(1.0, self.refresh_data)
+        self.set_interval(0.5, self.refresh_data)
 
     async def on_ready(self) -> None:
         self.action_show_help_panel()

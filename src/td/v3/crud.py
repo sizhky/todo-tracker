@@ -27,6 +27,14 @@ def rollback_on_fail(fn):
 
 
 class NodeCrud:
+    NODE_TYPE_SEQUENCE = [
+        NodeType.sector,
+        NodeType.area,
+        NodeType.project,
+        NodeType.section,
+        NodeType.task,
+        NodeType.subtask,
+    ]
     def __init__(self, db=None):
         self.db = db if db is not None else Session(engine)
         self.should_close_db = db is None  # Track if we created the session
@@ -291,14 +299,6 @@ class NodeCrud:
         # Update all children recursively
         # Updated promote_node method with updated update_descendants function
         def update_descendants(current_node, old_prefix, new_prefix):
-            node_type_sequence = [
-                NodeType.sector,
-                NodeType.area,
-                NodeType.project,
-                NodeType.section,
-                NodeType.task,
-                NodeType.subtask,
-            ]
             children = self.db.exec(
                 select(Node).where(Node.parent_id == current_node.id)
             ).all()
@@ -310,7 +310,7 @@ class NodeCrud:
                     child.path = f"{new_prefix}/{suffix}" if new_prefix else suffix
                 child.parent_id = current_node.id
                 depth = child.path.strip("/").count("/") + 1 if child.path else 0
-                child.type = node_type_sequence[depth]
+                child.type = self.NODE_TYPE_SEQUENCE[depth]
                 self.db.add(child)
                 update_descendants(child, old_prefix, new_prefix)
 
@@ -369,3 +369,61 @@ class NodeCrud:
         """
         self.db.exec(text("DELETE FROM node"))
         self.db.commit()
+
+    def get_node(self, node_read: NodeRead) -> Node:
+        node = self.db.exec(
+            select(Node).where(Node.title == node_read.title).where(Node.path == node_read.path)
+        ).first()
+        if not node:
+            raise ValueError(
+                f"Node with title {node_read.title} and path {node_read.path} not found."
+            )
+        return node
+
+    def compute_new_path_and_type(self, node: Node, new_parent: Node) -> tuple[str, NodeType]:
+        new_path = f"{new_parent.path}/{new_parent.title}" if new_parent.path else new_parent.title
+        depth = new_path.strip("/").count("/") + 1
+        new_type = self.NODE_TYPE_SEQUENCE[min(depth, len(self.NODE_TYPE_SEQUENCE) - 1)]
+        return new_path, new_type
+
+    def apply_move(self, node: Node, new_path: str, new_parent_id: UUID, new_type: NodeType):
+        node.path = new_path
+        node.parent_id = new_parent_id
+        node.type = new_type
+        self.db.add(node)
+
+    def update_descendants(self, node: Node, old_prefix: str, new_prefix: str):
+        children = self.db.exec(select(Node).where(Node.parent_id == node.id)).all()
+        for child in children:
+            if child.path.startswith(old_prefix):
+                suffix = child.path[len(old_prefix):]
+                if suffix.startswith("/"):
+                    suffix = suffix[1:]
+                child.path = f"{new_prefix}/{suffix}" if new_prefix else suffix
+            child.parent_id = node.id
+            depth = child.path.strip("/").count("/") + 1 if child.path else 0
+            child.type = self.NODE_TYPE_SEQUENCE[min(depth, len(self.NODE_TYPE_SEQUENCE) - 1)]
+            self.db.add(child)
+            self.update_descendants(child, old_prefix, new_prefix)
+
+    @rollback_on_fail
+    def move_node(self, node_update: NodeUpdate) -> NodeOutputType:
+        node_read, new_node = node_update.make_old_and_new_nodes()
+        node = self.get_node(node_read)
+
+        # Extract new parent details from new_node.path
+        path_parts = new_node.path.strip("/").split("/") if new_node.path else []
+        if not path_parts:
+            raise ValueError("Cannot move node to root without proper path")
+
+        new_parent_path = "/".join(path_parts[:-1])
+        new_parent_title = path_parts[-2] if len(path_parts) > 1 else path_parts[0]
+
+        new_parent = self.get_node(NodeRead(title=new_parent_title, path=new_parent_path))
+        old_path = node.path
+        new_path, new_type = self.compute_new_path_and_type(node, new_parent)
+        self.apply_move(node, new_path, new_parent.id, new_type)
+        self.update_descendants(node, old_path, new_path)
+        self.db.commit()
+        self.db.refresh(node)
+        return OUTPUT_TYPE_REGISTRY[node.type].from_orm(node)

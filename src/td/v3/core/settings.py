@@ -29,7 +29,6 @@ if not ACTIVE_DB_LINK_PATH.exists():
         print(f"Error creating symlink: {e}")
 
 DATABASE_URL = f"sqlite:///{ACTIVE_DB_LINK_PATH}"
-print(f"Using database URL: {DATABASE_URL}")
 # In-memory (useful for testing, data is lost when app stops):
 # DATABASE_URL = "sqlite:///:memory:"
 
