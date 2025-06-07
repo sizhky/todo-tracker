@@ -1,5 +1,6 @@
 from torch_snippets import AD, flatten
 from uuid import UUID
+from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 from sqlalchemy import text
 from .core import engine
@@ -156,10 +157,12 @@ class NodeCrud:
 
         return lineage
 
-    def _tree(self, ids: list[UUID] = None) -> AD:
-        """
-        Build a tree of nodes, optionally filtered by node IDs.
-        """
+    def _tree(
+        self,
+        ids: list[UUID] | None = None,
+        hide_completed_older_than: datetime | None = None,
+    ) -> AD:
+        """Build a tree of nodes with optional filtering."""
 
         def build_tree(nodes: list[NodeOutputType], visited: set) -> AD:
             o = AD()
@@ -178,7 +181,16 @@ class NodeCrud:
                     o[s.title].update(build_tree(s.children, visited))
             return o
 
-        all_nodes = self.db.exec(select(Node)).all()
+        query = select(Node)
+        if hide_completed_older_than is not None:
+            query = query.where(
+                ~(
+                    (Node.status == NodeStatus.completed)
+                    & (Node.updated_at < hide_completed_older_than)
+                )
+            )
+
+        all_nodes = self.db.exec(query).all()
         if ids is not None:
             all_nodes = [n for n in all_nodes if n.id in ids]
         all_nodes = [OUTPUT_TYPE_REGISTRY[n.type].from_orm(n) for n in all_nodes]
@@ -186,7 +198,8 @@ class NodeCrud:
 
     @property
     def tree(self) -> AD:
-        return self._tree()
+        five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
+        return self._tree(hide_completed_older_than=five_minutes_ago)
 
     def critical_nodes(self) -> AD:
         t = self.tree
@@ -214,11 +227,10 @@ class NodeCrud:
 
     @rollback_on_fail
     def _update_node(self, node_in: NodeUpdate) -> NodeOutputType:
-        """
-        Update a node in the database.
-        """
+        """Update a node while keeping its children intact."""
         if not node_in:
             return None
+
         old_node, new_node = node_in.make_old_and_new_nodes()
         node = self.db.exec(
             select(Node)
@@ -229,11 +241,15 @@ class NodeCrud:
             raise ValueError(
                 f"Node with title {old_node.title} and path {old_node.path} not found."
             )
-        if new_node.path:
+
+        old_prefix = f"{node.path}/{node.title}" if node.path else node.title
+
+        # Update parent if path is provided
+        if new_node.path is not None:
             _path_parts = new_node.path.strip("/").split("/")
-            if _path_parts:
-                _parent_path = "/".join(_path_parts[:-1])
-                _parent_title = _path_parts[-1] if _parent_path else _path_parts[0]
+            _parent_path = "/".join(_path_parts[:-1]) if _path_parts else ""
+            _parent_title = _path_parts[-1] if _path_parts else ""
+            if _parent_title:
                 parent = self.db.exec(
                     select(Node)
                     .where(Node.path == _parent_path)
@@ -241,31 +257,29 @@ class NodeCrud:
                 ).first()
                 if parent:
                     node.parent_id = parent.id
-        # delete the old node
-        self.db.delete(node)
-        # create the new node
-        _new_node = NodeCreate(**old_node.model_dump(exclude_unset=True))
-        for key, value in new_node.model_dump(exclude_unset=True).items():
-            key = key.replace("new_", "")
-            if value is None:
-                continue
-            setattr(_new_node, key, value)
-        # ensure the new node does not exist in the db
-        existing = self.db.exec(
-            select(Node)
-            .where(Node.title == _new_node.title)
-            .where(Node.path == _new_node.path)
-        ).first()
-        if existing:
-            raise ValueError(
-                f"Node with title {_new_node.title} and path {_new_node.path} already exists."
-            )
-        new_node = self._create_node(_new_node)
-        # self.db.add(node)
-        # self.db.commit()
-        # self.db.refresh(node)
-        node = OUTPUT_TYPE_REGISTRY[new_node.type].from_orm(new_node)
-        return node
+            node.path = new_node.path
+            depth = node.path.strip("/").count("/") + 1 if node.path else 0
+            node.type = self.NODE_TYPE_SEQUENCE[min(depth, len(self.NODE_TYPE_SEQUENCE) - 1)]
+
+        if new_node.title is not None:
+            node.title = new_node.title
+        if new_node.status is not None:
+            node.status = new_node.status
+        if new_node.order is not None:
+            node.order = new_node.order
+        if new_node.meta is not None:
+            node.meta = new_node.meta
+
+        node.updated_at = datetime.now(timezone.utc)
+        self.db.add(node)
+
+        new_prefix = f"{node.path}/{node.title}" if node.path else node.title
+        if new_prefix != old_prefix:
+            self.update_descendants(node, old_prefix, new_prefix)
+
+        self.db.commit()
+        self.db.refresh(node)
+        return OUTPUT_TYPE_REGISTRY[node.type].from_orm(node)
 
     @rollback_on_fail
     def promote_node(self, node: NodeRead) -> NodeOutputType:
@@ -358,6 +372,7 @@ class NodeCrud:
             if raw_node.status != NodeStatus.completed
             else NodeStatus.active
         )
+        raw_node.updated_at = datetime.now(timezone.utc)
         self.db.add(raw_node)
         self.db.commit()
         self.db.refresh(raw_node)
@@ -390,6 +405,7 @@ class NodeCrud:
         node.path = new_path
         node.parent_id = new_parent_id
         node.type = new_type
+        node.updated_at = datetime.now(timezone.utc)
         self.db.add(node)
 
     def update_descendants(self, node: Node, old_prefix: str, new_prefix: str):
@@ -403,6 +419,7 @@ class NodeCrud:
             child.parent_id = node.id
             depth = child.path.strip("/").count("/") + 1 if child.path else 0
             child.type = self.NODE_TYPE_SEQUENCE[min(depth, len(self.NODE_TYPE_SEQUENCE) - 1)]
+            child.updated_at = datetime.now(timezone.utc)
             self.db.add(child)
             self.update_descendants(child, old_prefix, new_prefix)
 
@@ -417,7 +434,7 @@ class NodeCrud:
             raise ValueError("Cannot move node to root without proper path")
 
         new_parent_path = "/".join(path_parts[:-1])
-        new_parent_title = path_parts[-2] if len(path_parts) > 1 else path_parts[0]
+        new_parent_title = path_parts[-1]
 
         new_parent = self.get_node(NodeRead(title=new_parent_title, path=new_parent_path))
         old_path = node.path
