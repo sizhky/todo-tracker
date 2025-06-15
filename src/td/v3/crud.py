@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from torch_snippets import AD, flatten
 from uuid import UUID
 from sqlmodel import Session, select
@@ -58,12 +59,12 @@ class NodeCrud:
         ).first()
         if existing:
             return OUTPUT_TYPE_REGISTRY[existing.type].from_orm(existing)
-        if "," in node.title:
+        if ";" in node.title:
             parent = self._get_or_create_parent(node)
             if parent:
                 node.parent_id = parent.id
             o = []
-            for _title in node.title.split(","):
+            for _title in node.title.split(";"):
                 _node = NodeCreate(
                     title=_title.strip(),
                     path=node.path,
@@ -160,29 +161,54 @@ class NodeCrud:
         """
         Build a tree of nodes, optionally filtered by node IDs.
         """
-
-        def build_tree(nodes: list[NodeOutputType], visited: set) -> AD:
-            o = AD()
-            for s in nodes:
-                if s.id in visited:
-                    continue
-                # Only include nodes whose IDs are in the provided ids list (if given)
-                if ids is not None and s.id not in ids:
-                    continue
-                visited.add(s.id)
-                if not hasattr(s, "children") or not s.children:
-                    o[s.title] = s
-                else:
-                    o[s.title] = AD()
-                    o[s.title]["__node"] = s
-                    o[s.title].update(build_tree(s.children, visited))
-            return o
-
         all_nodes = self.db.exec(select(Node)).all()
         if ids is not None:
             all_nodes = [n for n in all_nodes if n.id in ids]
         all_nodes = [OUTPUT_TYPE_REGISTRY[n.type].from_orm(n) for n in all_nodes]
-        return build_tree(all_nodes, set())
+
+        id_to_node = {n.id: n for n in all_nodes}
+        parent_to_children = {}
+        root_nodes = []
+
+        for n in all_nodes:
+            if n.parent_id:
+                parent_to_children.setdefault(n.parent_id, []).append(n)
+            else:
+                root_nodes.append(n)
+
+        skipped_ids = set()
+
+        def should_skip(n):
+            return (
+                n.status == NodeStatus.completed
+                and n.updated_at
+                and n.updated_at < (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=5))
+            )
+
+        def mark_skipped(n):
+            skipped_ids.add(n.id)
+            for child in parent_to_children.get(n.id, []):
+                mark_skipped(child)
+
+        for node in all_nodes:
+            if should_skip(node):
+                mark_skipped(node)
+
+        def build_tree(nodes):
+            o = AD()
+            for n in nodes:
+                if n.id in skipped_ids:
+                    continue
+                children = parent_to_children.get(n.id, [])
+                if not children:
+                    o[n.title] = n
+                else:
+                    o[n.title] = AD()
+                    o[n.title]["__node"] = n
+                    o[n.title].update(build_tree(children))
+            return o
+
+        return build_tree(root_nodes)
 
     @property
     def tree(self) -> AD:
@@ -336,6 +362,7 @@ class NodeCrud:
             if not raw_node.title.startswith("*")
             else raw_node.title.strip("*")
         )
+        raw_node.updated_at = datetime.now(timezone.utc)
         self.db.add(raw_node)
         self.db.commit()
         self.db.refresh(raw_node)
@@ -358,6 +385,7 @@ class NodeCrud:
             if raw_node.status != NodeStatus.completed
             else NodeStatus.active
         )
+        raw_node.updated_at = datetime.now(timezone.utc)
         self.db.add(raw_node)
         self.db.commit()
         self.db.refresh(raw_node)

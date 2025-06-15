@@ -317,10 +317,10 @@ class MainArea(Static):
         self._tree = Todos.from_AD(n.tree, expand_children=expand_children)
         yield self._tree
 
-    def update_data(self, new_data):
+    def update_data(self, new_data, expand_children: bool = False) -> None:
         expanded_labels = self._collect_expanded_labels(self._tree.root)
         self._tree.clear()
-        add_children(self._tree.root, new_data)
+        add_children(self._tree.root, new_data, expand_children=expand_children)
         self._restore_expanded_state(self._tree.root, expanded_labels)
 
     def _collect_expanded_labels(self, node):
@@ -364,13 +364,14 @@ class TodoAppV2(App):
         self.set_interval(0.5, self.refresh_data)
 
     async def on_ready(self) -> None:
-        self.action_show_help_panel()
+        # self.action_show_help_panel()
+        pass
 
     async def refresh_data(self) -> None:
         new_data = self.n.tree
         self.main_area.update_data(new_data)
         new_critical_data = self.n.critical_nodes()
-        self.critical_area.update_data(new_critical_data)
+        self.critical_area.update_data(new_critical_data, expand_children=True)
 
     def action_toggle_dark(self) -> None:
         if self.theme == "dracula":

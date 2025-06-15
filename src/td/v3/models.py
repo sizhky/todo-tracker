@@ -171,6 +171,8 @@ class NodeOutput(BaseModel):
     order: float = None
     meta: str = None
     parent_id: UUID | None
+    updated_at: datetime
+    created_at: datetime
 
     class Config:
         from_attributes = True

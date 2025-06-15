@@ -1,8 +1,14 @@
 .PHONY: tests
 
-textual-ui:
+ui:
 	export TDDB=default; \
-	ptw --runner "tdx";
+	watchfiles "python src/td/ui/textual/v3/app.py"
+
+simple-echo:
+	echo "Hello, World!"
+
+ui-test:
+	TDX=testing.db TDDB=testing watchfiles "python src/td/ui/textual/v3/app.py"
 
 dummy-ui:
 	python -m src.learning_textual
