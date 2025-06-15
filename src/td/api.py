@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from torch_snippets import AD
 
 
-from td.cli import cli
+from td.__pre_init__ import cli
 
 
 api = FastAPI()
@@ -118,7 +118,7 @@ def make_route_func(func, sig, hints):
 for command in cli.registered_commands:
     func = command.callback
     func_context = process_command_context(command)
-    func.from_api = True
+    func._source = "api"
 
     sig = signature(func)
     hints = get_type_hints(func)

@@ -8,7 +8,7 @@ branch=$(git symbolic-ref --short HEAD)
 staged_py_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
 
 # Format check only; do not modify files silently
-if [ -n "$staged_py_files" ]; then
+if [ "$branch" = "main" ] && [ -n "$staged_py_files" ]; then
   if ! ruff format --check $staged_py_files; then
     echo "❌ Ruff formatting issues found. Run:\n----✂︎----------------------------------------------------------"
     echo "ruff format \\"
@@ -19,14 +19,11 @@ if [ -n "$staged_py_files" ]; then
   fi
 fi
 
-# version check only for main branch
-if [ "$branch" = "main" ]; then
-  if git diff --cached --name-only | grep -q "version"; then
-    echo "✅ version updated."
-  else
-    echo "❌ version must be updated on every commit to main."
-    exit 1
-  fi
+if git diff --cached --name-only | grep -q "version"; then
+  echo "✅ version updated."
+else
+  echo "❌ version must be updated on every commit."
+  exit 1
 fi
 
 # make sure all tests are passing

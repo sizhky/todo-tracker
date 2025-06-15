@@ -1,0 +1,24 @@
+Screen {
+    align: center middle;
+}
+
+MainArea {
+    padding: 2 2;
+    background: transparent;
+    content-align: center middle;
+}
+
+AddTaskPopup {
+    width: 5;
+    height: 5;
+    padding: 2 2;
+    background: $panel;
+    border: $secondary tall;
+    content-align: center middle;
+}
+
+Todos {
+    background: transparent;
+    border: $accent round;
+    padding: 1;
+}
